@@ -18,6 +18,11 @@ var MODE = {
 var propvars = ['p','q','r','s','t'],
     varCount = 2;
 
+let epistemicAgents = ['a', 'b', 'c', 'd', 'e'];
+let currentEpistemicAgent = 'a';
+
+const agentButtons = d3.selectAll('#edit-pane .agent-btns button');
+
 var model = new MPL.Model(),
     modelString = 'AS1;ApS1,2;AqS;';
 
@@ -61,14 +66,14 @@ nodes.forEach(function(source) {
     var target = nodes.filter(function(node) { return node.id === targetId; })[0];
 
     if(sourceId < targetId) {
-      links.push({source: source, target: target, left: false, right: true });
+      links.push({source: source, target: target, left: false, right: true, agent: 'a' });
       return;
     }
 
     var link = links.filter(function(l) { return (l.source === target && l.target === source); })[0];
 
     if(link) link.left = true;
-    else links.push({source: target, target: source, left: true, right: false });
+    else links.push({source: target, target: source, left: true, right: false, agent: 'b' });
   });
 });
 
@@ -88,37 +93,53 @@ var force = d3.layout.force()
     .nodes(nodes)
     .links(links)
     .size([width, height])
-    .linkDistance(150)
-    .charge(-500)
+    .linkDistance(180)
+    .charge(-600)
     .on('tick', tick);
 
-// define arrow markers for graph links
-svg.append('svg:defs').append('svg:marker')
-    .attr('id', 'end-arrow')
-    .attr('viewBox', '0 -5 10 10')
-    .attr('refX', 6)
-    .attr('markerWidth', 3)
-    .attr('markerHeight', 3)
-    .attr('orient', 'auto')
-  .append('svg:path')
-    .attr('d', 'M0,-5L10,0L0,5')
-    .attr('fill', '#000');
+for (const agent of epistemicAgents) {
+  // define agent markers for graph links
+  svg.append('svg:defs').append('svg:marker')
+      .attr('id', 'mid-arrow-'+agent)
+      .attr('viewBox', '-5 -5 10 10')
+      .attr('refX', 0)
+      .attr('markerWidth', 8)
+      .attr('markerHeight', 8)
+      .attr('orient', 0)
+    .append('svg:text')
+      .text(agent)
+      .classed('agent-text', true)
+      .classed('agent-'+agent, true);
 
-svg.append('svg:defs').append('svg:marker')
-    .attr('id', 'start-arrow')
-    .attr('viewBox', '0 -5 10 10')
-    .attr('refX', 4)
-    .attr('markerWidth', 3)
-    .attr('markerHeight', 3)
-    .attr('orient', 'auto')
+  // define arrow markers for graph links
+  svg.append('svg:defs').append('svg:marker')
+  .attr('id', 'end-arrow-'+agent)
+  .attr('viewBox', '0 -5 10 10')
+  .attr('refX', 6)
+  .attr('markerWidth', 3)
+  .attr('markerHeight', 3)
+  .attr('orient', 'auto')
   .append('svg:path')
-    .attr('d', 'M10,-5L0,0L10,5')
-    .attr('fill', '#000');
+  .attr('d', 'M0,-5L10,0L0,5')
+  .classed('agent-'+agent, true);
+
+  svg.append('svg:defs').append('svg:marker')
+  .attr('id', 'start-arrow-'+agent)
+  .attr('viewBox', '0 -5 10 10')
+  .attr('refX', 4)
+  .attr('markerWidth', 3)
+  .attr('markerHeight', 3)
+  .attr('orient', 'auto')
+  .append('svg:path')
+  .attr('d', 'M10,-5L0,0L10,5')
+  .attr('fill', '#000')
+  .classed('agent-'+agent, true);
+}
 
 // line displayed when dragging new nodes
 var drag_line = svg.append('svg:path')
   .attr('class', 'link dragline hidden')
-  .attr('d', 'M0,0L0,0');
+  .attr('d', 'M0,0Q0 0, 0 0');
 
 // handles to link and node element groups
 var path = svg.append('svg:g').selectAll('path'),
@@ -263,6 +284,17 @@ function makeAssignmentString(node) {
   return outputVars.join(', ');
 }
 
+function setCurrentAgent(agentNumber) {
+  currentEpistemicAgent = epistemicAgents[agentNumber];
+  console.log('current agent', currentEpistemicAgent);
+
+  // update variable count button states
+  agentButtons.each(function(d,i) {
+    if(currentEpistemicAgent !== epistemicAgents[i]) d3.select(this).classed('active', false);
+    else d3.select(this).classed('active', true);
+  });
+}
+
 // set # of vars currently in use and notify panel of changes
 function setVarCount(count) {
   varCount = count;
@@ -302,19 +334,36 @@ function setVarForSelectedNode(varnum, value) {
 // update force layout (called automatically each iteration)
 function tick() {
   // draw directed edges with proper padding from node centers
+  //TODO: change the ending position of arrows depending on the agent
   path.attr('d', function(d) {
-    var deltaX = d.target.x - d.source.x,
-        deltaY = d.target.y - d.source.y,
-        dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY),
-        normX = deltaX / dist,
-        normY = deltaY / dist,
-        sourcePadding = d.left ? 17 : 12,
-        targetPadding = d.right ? 17 : 12,
-        sourceX = d.source.x + (sourcePadding * normX),
-        sourceY = d.source.y + (sourcePadding * normY),
-        targetX = d.target.x - (targetPadding * normX),
-        targetY = d.target.y - (targetPadding * normY);
-    return 'M' + sourceX + ',' + sourceY + 'L' + targetX + ',' + targetY;
+    let angle = 0;
+    if (d.agent === 'a') angle = -1;
+    if (d.agent === 'b') angle = -0.5;
+    if (d.agent === 'c') angle = 0;
+    if (d.agent === 'd') angle = 0.5;
+    if (d.agent === 'e') angle = 1;
+
+    const facing = normalize([
+      d.target.x - d.source.x,
+      deltaY = d.target.y - d.source.y
+    ]);
+    const sourceNorm = rotateByAngle(facing, -angle);
+    const targetNorm = rotateByAngle(facing, angle + Math.PI);
+    const sourcePadding = d.left ? 17 : 12;
+    const targetPadding = d.right ? 17 : 12;
+    const sourceX = d.source.x + (sourcePadding * sourceNorm[0]),
+        sourceY = d.source.y + (sourcePadding * sourceNorm[1]),
+        targetX = d.target.x + (targetPadding * targetNorm[0]),
+        targetY = d.target.y + (targetPadding * targetNorm[1]);
+
+    let mul = 0;
+    if (d.agent === 'a') mul = -40;
+    if (d.agent === 'b') mul = -20;
+    if (d.agent === 'c') mul = 0;
+    if (d.agent === 'd') mul = 20;
+    if (d.agent === 'e') mul = 40;
+
+    return getDoubleCurvedSVGPath([sourceX, sourceY], [targetX, targetY], mul);
   });
 
   circle.attr('transform', function(d) {
@@ -322,22 +371,72 @@ function tick() {
   });
 }
 
+function getDoubleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
+  const facing = [
+    x2 - x1,
+    y2 - y1,
+  ];
+  const orthogonalUnit = rotate90deg(normalize(facing));
+
+  const curveCtrlPoint = [
+    x1 + facing[0]/2 + orthogonalUnit[0]*curviness,
+    y1 + facing[1]/2 + orthogonalUnit[1]*curviness
+  ]
+
+  return 'M' + x1 + ',' + y1 +
+    getSingleCurvedSVGPath([x1, y1], curveCtrlPoint, curviness/2) +
+    getSingleCurvedSVGPath(curveCtrlPoint, [x2, y2], curviness/2);
+}
+
+function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
+  const facing = [
+    x2 - x1,
+    y2 - y1,
+  ];
+  const orthogonalUnit = rotate90deg(normalize(facing));
+
+  return 'Q' + (x1 + facing[0]/2 + orthogonalUnit[0]*curviness) + ' ' + (y1 + facing[1]/2 + orthogonalUnit[1]*curviness) +
+      ',' + x2 + ' ' + y2;
+}
+
 // update graph (called when needed)
 function restart() {
   // path (link) group
   path = path.data(links);
 
+  function mid(d) {
+    return `url(#mid-arrow-${d.agent})`;
+  }
+  function start(d) {
+    return d.left ? `url(#start-arrow-${d.agent})` : '';
+  }
+  function end(d) {
+    return d.right ? `url(#end-arrow-${d.agent})` : '';
+  }
+
   // update existing links
   path.classed('selected', function(d) { return d === selected_link; })
-    .style('marker-start', function(d) { return d.left ? 'url(#start-arrow)' : ''; })
-    .style('marker-end', function(d) { return d.right ? 'url(#end-arrow)' : ''; });
+    .classed('agent-a', function(d) { return d.agent === 'a'; })
+    .classed('agent-b', function(d) { return d.agent === 'b'; })
+    .classed('agent-c', function(d) { return d.agent === 'c'; })
+    .classed('agent-d', function(d) { return d.agent === 'd'; })
+    .classed('agent-e', function(d) { return d.agent === 'e'; })
+    .style('marker-start', start)
+    .style('marker-end', end)
+    .style('marker-mid', mid);
 
   // add new links
   path.enter().append('svg:path')
     .attr('class', 'link')
     .classed('selected', function(d) { return d === selected_link; })
-    .style('marker-start', function(d) { return d.left ? 'url(#start-arrow)' : ''; })
-    .style('marker-end', function(d) { return d.right ? 'url(#end-arrow)' : ''; })
+    .classed('agent-a', function(d) { return d.agent === 'a'; })
+    .classed('agent-b', function(d) { return d.agent === 'b'; })
+    .classed('agent-c', function(d) { return d.agent === 'c'; })
+    .classed('agent-d', function(d) { return d.agent === 'd'; })
+    .classed('agent-e', function(d) { return d.agent === 'e'; })
+    .style('marker-start', start)
+    .style('marker-end', end)
+    .style('marker-mid', mid)
     .on('mousedown', function(d) {
       if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
 
@@ -366,7 +465,7 @@ function restart() {
 
   g.append('svg:circle')
     .attr('class', 'node')
-    .attr('r', 12)
+    .attr('r', 15)
     .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
     .style('stroke', function(d) { return d3.rgb(colors(d.id)).darker().toString(); })
     .classed('reflexive', function(d) { return d.reflexive; })
@@ -389,18 +488,28 @@ function restart() {
       else setSelectedNode(mousedown_node);
       selected_link = null;
 
-      // reposition drag line
+      // start dragging with drag line
       drag_line
-        .style('marker-end', 'url(#end-arrow)')
+        .style('marker-end', `url(#end-arrow-${currentEpistemicAgent})`)
         .classed('hidden', false)
-        .attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + mousedown_node.x + ',' + mousedown_node.y);
+        .classed('agent-a', function() { return currentEpistemicAgent === 'a'; })
+        .classed('agent-b', function() { return currentEpistemicAgent === 'b'; })
+        .classed('agent-c', function() { return currentEpistemicAgent === 'c'; })
+        .classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
+        .classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
+        .attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'Q' + mousedown_node.x + ' ' + mousedown_node.y + ',' + mousedown_node.x + ' ' + mousedown_node.y)
+        .style('marker-mid', mid);
+
+      function mid() {
+        return `url(#mid-arrow-${currentEpistemicAgent})`;
+      }
 
       restart();
     })
     .on('mouseup', function(d) {
       if(appMode !== MODE.EDIT || !mousedown_node) return;
 
-      // needed by FF
+      // drag line dropped ontop of a node
       drag_line
         .classed('hidden', true)
         .style('marker-end', '');
@@ -429,13 +538,13 @@ function restart() {
       }
 
       var link = links.filter(function(l) {
-        return (l.source === source && l.target === target);
+        return (l.source === source && l.target === target && l.agent === currentEpistemicAgent);
       })[0];
 
       if(link) {
         link[direction] = true;
       } else {
-        link = {source: source, target: target, left: false, right: false};
+        link = {source: source, target: target, left: false, right: false, agent: currentEpistemicAgent};
         link[direction] = true;
         links.push(link);
       }
@@ -499,15 +608,50 @@ function mousedown() {
 function mousemove() {
   if(!mousedown_node) return;
 
-  // update drag line
-  drag_line.attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'L' + d3.mouse(this)[0] + ',' + d3.mouse(this)[1]);
+  // update drag line on move
+  const facing = [
+    d3.mouse(this)[0] - mousedown_node.x,
+    d3.mouse(this)[1] - mousedown_node.y,
+  ];
+  const orthogonalUnit = rotate90deg(normalize(facing));
+
+  drag_line
+    .attr('d', getDoubleCurvedSVGPath([mousedown_node.x, mousedown_node.y], d3.mouse(this), 0))
+    .classed('agent-a', function() { return currentEpistemicAgent === 'a'; })
+    .classed('agent-b', function() { return currentEpistemicAgent === 'b'; })
+    .classed('agent-c', function() { return currentEpistemicAgent === 'c'; })
+    .classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
+    .classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
+    .style('marker-end', `url(#end-arrow-${currentEpistemicAgent})`)
+    .style('marker-mid', mid);
+
+  function mid() {
+    return `url(#mid-arrow-${currentEpistemicAgent})`;
+  }
 
   restart();
 }
 
+function normalize([x, y]) {
+  const normalizationFactor = 1/length([x, y]);
+  return [x*normalizationFactor, y*normalizationFactor];
+}
+
+function length([x, y]) {
+  return Math.sqrt(x**2 + y**2);
+}
+
+function rotate90deg([x, y]) {
+  return [y, -x];
+}
+
+function rotateByAngle([x, y], angle) {
+  return [Math.cos(angle)*x - Math.sin(angle)*y, Math.sin(angle)*x + Math.cos(angle)*y]
+}
+
 function mouseup() {
   if(mousedown_node) {
-    // hide drag line
+    // release and hide drag line
     drag_line
       .classed('hidden', true)
       .style('marker-end', '');
@@ -685,7 +829,8 @@ function setAppMode(newMode) {
     svg.classed('ctrl', false);
     lastKeyDown = -1;
 
-    // in case still dragging
+    // stop showing drag line if the app switches to another mode e.g. from the 'Edit Modal' tab
+    // to the 'Evaluate Formula' tab.
     drag_line
       .classed('hidden', true)
       .style('marker-end', '');

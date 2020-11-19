@@ -172,9 +172,29 @@ svg.edit:not(.active):not(.ctrl) {
 
 path.link {
   fill: none;
-  stroke: #000;
   stroke-width: 4px;
   cursor: default;
+}
+
+.agent-a {
+  stroke: red;
+  fill: red;
+}
+.agent-b {
+  stroke: orange;
+  fill: orange;
+}
+.agent-c {
+  stroke: purple;
+  fill: purple;
+}
+.agent-d {
+  stroke: yellowgreen;
+  fill: yellowgreen;
+}
+.agent-e {
+  stroke: turquoise;
+  fill: turquoise;
 }
 
 svg.edit:not(.active):not(.ctrl) path.link {
@@ -193,36 +213,24 @@ path.link.hidden {
   stroke-width: 0;
 }
 
-circle.node {
-  stroke-width: 1.5px;
-}
-
 svg.edit circle.node {
   cursor: pointer;
+  stroke-width: 0;
 }
 
 g.waiting circle.node {
   fill: #c7c7c7 !important;
-}
-
-g.waiting circle.node:not(.reflexive) {
-  stroke: #7f7f7f !important;
+  stroke-width: 0;
 }
 
 g.true circle.node {
   fill: #98df8a !important;
-}
-
-g.true circle.node:not(.reflexive) {
-  stroke: #2ca02c !important;
+  stroke-width: 0;
 }
 
 g.false circle.node {
   fill: #ff9896 !important;
-}
-
-g.false circle.node:not(.reflexive) {
-  stroke: #d62728 !important;
+  stroke-width: 0;
 }
 
 circle.node.reflexive {
@@ -235,10 +243,16 @@ text {
   pointer-events: none;
 }
 
+.agent-text {
+  stroke: #FFF;
+  paint-order: stroke;
+  stroke-width: 2px;
+  font: italic 6px sans-serif;
+}
+
 text.shadow {
   stroke: #FFF;
-  stroke-width: 3px;
-  stroke-opacity: 0.9;
+  stroke-width: 5px;
 }
 
 text.id {

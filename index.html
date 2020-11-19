@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Modal Logic Playground</title>
+    <title>Epistemic Logic Playground</title>
     <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300,400,700">
     <link rel="stylesheet" href="lib/bootstrap.min.css">
     <link rel="stylesheet" href="css/app.css">
@@ -10,8 +10,8 @@
 
   <body>
     <div id="page-container">
-      <a href="https://github.com/rkirsling/modallogic"><img class="github-link" src="img/blacktocat-32.png" title="Fork me on GitHub"></a>
-      <h1>Modal Logic Playground</h1>
+      <a href="https://github.com/vezwork/modallogic"><img class="github-link" src="img/blacktocat-32.png" title="Fork me on GitHub"></a>
+      <h1>Epistemic Logic Playground</h1>
       <section id="app">
         <div id="mode-select" class="btn-group">
           <button class="btn btn-primary active" onclick="setAppMode(MODE.EDIT)">
@@ -27,8 +27,18 @@
         <div id="app-body">
           <div class="panel tab-content">
             <div id="edit-pane" class="tab-pane active">
+              <div class="agent-btns">
+                Current agent:<br>
+                <div class="btn-group">
+                  <button class="btn active" onclick="setCurrentAgent(0)">a</button>
+                  <button class="btn" onclick="setCurrentAgent(1)">b</button>
+                  <button class="btn" onclick="setCurrentAgent(2)">c</button>
+                  <button class="btn" onclick="setCurrentAgent(3)">d</button>
+                  <button class="btn" onclick="setCurrentAgent(4)">e</button>
+                </div>
+              </div>
               <div class="var-count">
-                Number of propositional variables:
+                Number of propositional variables:<br>
                 <div class="btn-group">
                   <button class="btn" onclick="setVarCount(1)">1</button>
                   <button class="btn active" onclick="setVarCount(2)">2</button>
@@ -341,7 +351,9 @@
   </body>
 
   <script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$']] } });</script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS_CHTML"></script>
+  <script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
   <script src="lib/d3.min.js"></script>
   <script src="lib/formula-parser.min.js"></script>
   <script src="js/MPL.js"></script>
