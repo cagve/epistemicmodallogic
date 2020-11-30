@@ -20,9 +20,9 @@
             <i class="icon-eye-open icon-white"></i> Evaluate Formula
           </button>
         </div>
-        <div id="model-link">
+        <!--<div id="model-link">
           <button class="btn btn-inverse" onclick="showLinkDialog()">Link to Current Model</button>
-        </div>
+        </div>-->
         <div id="app-body">
           <div class="panel tab-content">
             <div id="edit-pane" class="tab-pane active">
@@ -110,8 +110,7 @@
                     When entering a formula:
                     <ul class="pl-2">
                       <li>use <code>~A</code> for $\lnot{}A$</li>
-                      <li>use <code>[]A</code> for $\Box{}A$</li>
-                      <li>use <code>&lt;&gt;A</code> for $\Diamond{}A$</li>
+                      <li>use <code>K[a]A</code> for $K_aA$</li>
                       <li>use <code>(A &amp; B)</code> for $(A\land{}B)$</li>
                       <li>use <code>(A | B)</code> for $(A\lor{}B)$</li>
                       <li>use <code>(A -&gt; B)</code> for $(A\rightarrow{}B)$</li>
@@ -127,7 +126,35 @@
         </div>
       </section>
       <section id="whatis">
-        <h2>So what's modal logic, anyway?</h2>
+        <h2>Instructions</h2>
+        <ul class="unstyled">
+          <li class="mb-1">Click in the open space to <strong>add a state</strong></li>
+          <li class="mb-1">Drag between states to <strong>add a transition for the current agent</strong></li>
+          <li class="mb-1">Ctrl-drag a state to <strong>move</strong> graph layout</li>
+          <li class="mb-1">Click a state or a transition to <strong>select</strong> it</li>
+          <li class="mb-1">
+            When a state is selected:
+            <ul>
+              <li><strong>R</strong> toggles reflexivity</li>
+              <li><strong>Delete</strong> removes the state</li>
+            </ul>
+          </li>
+          <li class="mb-1">
+            When a transition is selected:
+            <ul>
+              <li><strong>L</strong>(eft), <strong>R</strong>(ight), <strong>B</strong>(oth) change direction</li>
+              <li><strong>Delete</strong> removes the transition</li>
+            </ul>
+          </li>
+          <li class="mb-1">Copy the URL from your browser's URL bar to share your model!</li>
+        </ul>
+        <p></p>
+        <h2>For more information on Modal and Epistemic Logic:</h2>
+        <ul>
+          <li><a href="https://plato.stanford.edu/entries/dynamic-epistemic/appendix-A-kripke.html">Kripke models for modal logic (Stanford Encyclopedia of Philosophy)</a></li>
+        </ul>
+
+        <!--<h2>So what's modal logic, anyway?</h2>
         <p>
           <strong>Modal logic</strong> is a type of symbolic logic for capturing inferences about <strong>necessity</strong> and <strong>possibility</strong>.
           As with other logical systems, the theory lies at the intersection of mathematics and philosophy, while important applications are found within computer science and linguistics.
@@ -345,7 +372,7 @@
       <div class="modal-body">
         <p>Copy the following URL to save your model for later or to share it with others:</p>
         <input type="text" value="" readonly onclick="this.select()">
-      </div>
+      </div>-->
     </div>
   </body>
 
