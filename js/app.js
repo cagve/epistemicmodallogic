@@ -23,8 +23,8 @@ let currentEpistemicAgent = 'a';
 
 const agentButtons = d3.selectAll('#edit-pane .agent-btns button');
 
-var model = new MPL.Model(),
-    modelString = 'AS1;ApS1,2;AqS;';
+const model = new MPL.Model();
+let modelString = ';AS0a,';
 
 var modelParam = window.location.search.match(/\?model=(.*)/);
 if(modelParam) modelString = modelParam[1];
@@ -53,29 +53,33 @@ states.forEach(function(state) {
 });
 
 // --> links setup
-nodes.forEach(function(source) {
-  var sourceId = source.id,
-      successors = model.getSuccessorsOf(sourceId);
-
-  successors.forEach(function(targetId) {
+for (const source of nodes) {
+  const sourceId = source.id;
+  for (const succ of model.getSuccessorsOf(sourceId)) {
+    const targetId = succ.target;
     if(sourceId === targetId) {
       source.reflexive = true;
-      return;
+      continue;
     }
 
-    var target = nodes.filter(function(node) { return node.id === targetId; })[0];
+    const target = nodes.filter(function(node) { return node.id === targetId; })[0];
+    const link = links.filter(l => l.source === target && l.target === source && l.agent === succ.agent)[0];
 
-    if(sourceId < targetId) {
-      links.push({source: source, target: target, left: false, right: true, agent: 'a' });
-      return;
+    if (link) {
+      if(sourceId < targetId) {
+        link.right = true;
+      } else {
+        link.left = true;
+      }
+    } else {
+      if(sourceId < targetId) {
+        links.push({source: source, target: target, left: false, right: true, agent: succ.agent });
+      } else {
+        links.push({source: target, target: source, left: true, right: false, agent: succ.agent });
+      }
     }
-
-    var link = links.filter(function(l) { return (l.source === target && l.target === source); })[0];
-
-    if(link) link.left = true;
-    else links.push({source: target, target: source, left: true, right: false, agent: 'b' });
-  });
-});
+  }
+}
 
 // set up SVG for D3
 var width  = 640,
@@ -94,14 +98,14 @@ var force = d3.layout.force()
     .links(links)
     .size([width, height])
     .linkDistance(180)
-    .charge(-600)
+    .charge(-800)
     .on('tick', tick);
 
 for (const agent of epistemicAgents) {
   // define agent markers for graph links
   svg.append('svg:defs').append('svg:marker')
       .attr('id', 'mid-arrow-'+agent)
-      .attr('viewBox', '-5 -5 10 10')
+      .attr('viewBox', '-2 -5 10 10')
       .attr('refX', 0)
       .attr('markerWidth', 8)
       .attr('markerHeight', 8)
@@ -167,13 +171,13 @@ function showLinkDialog() {
   linkInputElem.value = 'http://rkirsling.github.com/modallogic/?model=' + model.getModelString();
 
   backdrop.classed('inactive', false);
-  setTimeout(function() { backdrop.classed('in', true); linkDialog.classed('inactive', false); }, 0);
-  setTimeout(function() { linkDialog.classed('in', true); }, 150);
+  setTimeout(function() { backdrop.classed('show', true); linkDialog.classed('inactive', false); }, 0);
+  setTimeout(function() { linkDialog.classed('show', true); }, 150);
 }
 
 function hideLinkDialog() {
-  linkDialog.classed('in', false);
-  setTimeout(function() { linkDialog.classed('inactive', true); backdrop.classed('in', false); }, 150);
+  linkDialog.classed('show', false);
+  setTimeout(function() { linkDialog.classed('inactive', true); backdrop.classed('show', false); }, 150);
   setTimeout(function() { backdrop.classed('inactive', true); }, 300);
 }
 
@@ -199,7 +203,7 @@ function evaluateFormula() {
   // check formula for bad vars
   var varsInUse = propvars.slice(0, varCount);
   var badVars = (formula.match(/\w+/g) || []).filter(function(v) {
-    return varsInUse.indexOf(v) === -1;
+    return v !== 'K' && varsInUse.indexOf(v) === -1 && epistemicAgents.indexOf(v) === -1;
   });
   if(badVars.length) {
     evalOutput
@@ -213,6 +217,7 @@ function evaluateFormula() {
   try {
     wff = new MPL.Wff(formula);
   } catch(e) {
+    console.log(e);
     evalOutput
       .html('<div class="alert">Invalid formula!</div>')
       .classed('inactive', false);
@@ -245,7 +250,7 @@ function evaluateFormula() {
       latexFalse = falseStates.length ? '$w_{' + falseStates.join('},$ $w_{') + '}$' : '$\\varnothing$';
   evalOutput
     .html('<div class="alert alert-success"><strong>True:</strong><div><div>' + latexTrue + '</div></div></div>' +
-          '<div class="alert alert-error"><strong>False:</strong><div><div>' + latexFalse + '</div></div></div>')
+          '<div class="alert alert-danger"><strong>False:</strong><div><div>' + latexFalse + '</div></div></div>')
     .classed('inactive', false);
 
   // re-render LaTeX
@@ -286,7 +291,6 @@ function makeAssignmentString(node) {
 
 function setCurrentAgent(agentNumber) {
   currentEpistemicAgent = epistemicAgents[agentNumber];
-  console.log('current agent', currentEpistemicAgent);
 
   // update variable count button states
   agentButtons.each(function(d,i) {
@@ -349,8 +353,8 @@ function tick() {
     ]);
     const sourceNorm = rotateByAngle(facing, -angle);
     const targetNorm = rotateByAngle(facing, angle + Math.PI);
-    const sourcePadding = d.left ? 17 : 12;
-    const targetPadding = d.right ? 17 : 12;
+    const sourcePadding = d.left ? 21 : 16;
+    const targetPadding = d.right ? 21 : 16;
     const sourceX = d.source.x + (sourcePadding * sourceNorm[0]),
         sourceY = d.source.y + (sourcePadding * sourceNorm[1]),
         targetX = d.target.x + (targetPadding * targetNorm[0]),
@@ -522,7 +526,7 @@ function restart() {
       d3.select(this).attr('transform', '');
 
       // add transition to model
-      model.addTransition(mousedown_node.id, mouseup_node.id);
+      model.addTransition(mousedown_node.id, mouseup_node.id, currentEpistemicAgent);
 
       // add link to graph (update if exists)
       // note: links are strictly source < target; arrows separately specified by booleans
@@ -560,18 +564,19 @@ function restart() {
       .attr('x', 0)
       .attr('y', 4)
       .attr('class', 'id')
+      .attr('fill', 'white')
       .text(function(d) { return d.id; });
 
   // text shadow
   g.append('svg:text')
-      .attr('x', 16)
+      .attr('x', 18)
       .attr('y', 4)
       .attr('class', 'shadow')
       .text(makeAssignmentString);
 
   // text foreground
   g.append('svg:text')
-      .attr('x', 16)
+      .attr('x', 18)
       .attr('y', 4)
       .text(makeAssignmentString);
 
@@ -720,14 +725,15 @@ function keydown() {
       if(selected_link) {
         var sourceId = selected_link.source.id,
             targetId = selected_link.target.id;
+        const agent = selected_link.agent;
         // set link direction to both left and right
         if(!selected_link.left) {
           selected_link.left = true;
-          model.addTransition(targetId, sourceId);
+          model.addTransition(targetId, sourceId, agent);
         }
         if(!selected_link.right) {
           selected_link.right = true;
-          model.addTransition(sourceId, targetId);
+          model.addTransition(sourceId, targetId, agent);
         }
       }
       restart();
@@ -736,14 +742,15 @@ function keydown() {
       if(selected_link) {
         var sourceId = selected_link.source.id,
             targetId = selected_link.target.id;
+        const agent = selected_link.agent;
         // set link direction to left only
         if(!selected_link.left) {
           selected_link.left = true;
-          model.addTransition(targetId, sourceId);
+          model.addTransition(targetId, sourceId, agent);
         }
         if(selected_link.right) {
           selected_link.right = false;
-          model.removeTransition(sourceId, targetId);
+          model.removeTransition(sourceId, targetId, agent);
         }
       }
       restart();
@@ -753,22 +760,23 @@ function keydown() {
         // toggle node reflexivity
         if(selected_node.reflexive) {
           selected_node.reflexive = false;
-          model.removeTransition(selected_node.id, selected_node.id);
+          model.removeTransition(selected_node.id, selected_node.id, currentEpistemicAgent);
         } else {
           selected_node.reflexive = true;
-          model.addTransition(selected_node.id, selected_node.id);
+          model.addTransition(selected_node.id, selected_node.id, currentEpistemicAgent);
         }
       } else if(selected_link) {
         var sourceId = selected_link.source.id,
             targetId = selected_link.target.id;
+        const agent = selected_link.agent;
         // set link direction to right only
         if(selected_link.left) {
           selected_link.left = false;
-          model.removeTransition(targetId, sourceId);
+          model.removeTransition(targetId, sourceId, agent);
         }
         if(!selected_link.right) {
           selected_link.right = true;
-          model.addTransition(sourceId, targetId);
+          model.addTransition(sourceId, targetId, agent);
         }
       }
       restart();

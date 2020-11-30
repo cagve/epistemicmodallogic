@@ -5,11 +5,14 @@ body {
 #page-container {
   width: 962px;
   position: relative;
-  margin: 0 auto;
+  margin: 50px auto 0;
 }
 
 .inactive {
   display: none;
+}
+.show {
+  display: inline;
 }
 
 img.github-link {
@@ -50,7 +53,7 @@ h3 {
 }
 
 #app-body {
-  border: 1px solid #e3e3e3;
+  border: 1px solid #ddd;
   border-radius: 4px;
   width: 960px;
   height: 540px;
@@ -59,12 +62,10 @@ h3 {
 }
 
 #app-body .panel {
-  width: 280px;
-  height: 500px;
+  width: 300px;
+  height: 100%;
   padding: 20px 19px 20px 20px;
   background-color: #f5f5f5;
-  border-right: 1px solid #e3e3e3;
-  box-shadow: inset 0 1px 1px rgba(0,0,0,0.05);
   position: absolute;
   left: 0;
 }
@@ -81,8 +82,8 @@ div.var-count {
 
 table.propvars {
   position: relative;
-  top: -24px;
-  left: 100px;
+  top: 0px;
+  left: 50px;
   margin-bottom: -28px;
 }
 
@@ -95,9 +96,11 @@ table.propvars td.var-name {
 }
 
 .eval-input input {
-  width: 266px;
+  width: 100%;
   font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
   font-size: 12px;
+  border: none;
+  padding: 10px;
 }
 
 .eval-output .alert {
@@ -107,7 +110,7 @@ table.propvars td.var-name {
 
 .eval-output .alert > div {
   overflow-y: auto;
-  max-height: 40px;
+  max-height: 56px;
 }
 
 .eval-output .alert > div > div {
@@ -125,7 +128,6 @@ table.propvars td.var-name {
   bottom: 0;
   padding-top: 20px;
   margin-top: 20px;
-  border-top: 1px solid #e3e3e3;
 }
 
 .instructions > ul {
@@ -146,12 +148,8 @@ table.propvars td.var-name {
 #app-body .current-formula {
   position: absolute;
   top: 0;
-  left: 320px;
+  left: 300px;
   background-color: #f5f5f5;
-  border-bottom: 1px solid #e3e3e3;
-  border-right: 1px solid #e3e3e3;
-  border-bottom-right-radius: 4px;
-  box-shadow: inset 0 1px 1px rgba(0,0,0,0.05), 1px 1px 1px rgba(255,255,255,0.95);
   padding: 10px;
 }
 
@@ -177,8 +175,8 @@ path.link {
 }
 
 .agent-a {
-  stroke: red;
-  fill: red;
+  stroke: orangered;
+  fill: orangered;
 }
 .agent-b {
   stroke: orange;
@@ -239,7 +237,7 @@ circle.node.reflexive {
 }
 
 text {
-  font-size: 12px;
+  font-size: 14px;
   pointer-events: none;
 }
 

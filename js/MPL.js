@@ -16,16 +16,18 @@ var MPL = (function (FormulaParser) {
   var variableKey = 'prop';
 
   var unaries = [
-    { symbol: '~',  key: 'neg',  precedence: 4 },
-    { symbol: '[]', key: 'nec',  precedence: 4 },
-    { symbol: '<>', key: 'poss', precedence: 4 }
+    { symbol: '~',  key: 'neg',  precedence: 5 },
+    { symbol: '[]', key: 'nec',  precedence: 5 },
+    { symbol: '<>', key: 'poss', precedence: 5 },
+    { symbol: 'K[', key: 'kno_start', precedence: 5 } // the operand to K[ must be a var
   ];
 
   var binaries = [
     { symbol: '&',   key: 'conj', precedence: 3, associativity: 'right' },
     { symbol: '|',   key: 'disj', precedence: 2, associativity: 'right' },
     { symbol: '->',  key: 'impl', precedence: 1, associativity: 'right' },
-    { symbol: '<->', key: 'equi', precedence: 0, associativity: 'right' }
+    { symbol: '<->', key: 'equi', precedence: 0, associativity: 'right' },
+    { symbol: ']', key: 'kno_end', precedence: 4, associativity: 'left' } // the left operand to kno_end must be kno_start
   ];
 
   var MPLParser = new FormulaParser(variableKey, unaries, binaries);
@@ -52,6 +54,10 @@ var MPL = (function (FormulaParser) {
       return '[]' + _jsonToASCII(json.nec);
     else if (json.poss)
       return '<>' + _jsonToASCII(json.poss);
+    else if (json.kno_start && json.kno_start.prop)
+      return 'K[' + json.kno_start.prop;
+    else if (json.kno_end && json.kno_end.length === 2 && json.kno_end[0].kno_start)
+      return _jsonToASCII(json.kno_end[0]) + '](' + _jsonToASCII(json.kno_end[1]) + ')';
     else if (json.conj && json.conj.length === 2)
       return '(' + _jsonToASCII(json.conj[0]) + ' & ' + _jsonToASCII(json.conj[1]) + ')';
     else if (json.disj && json.disj.length === 2)
@@ -72,6 +78,8 @@ var MPL = (function (FormulaParser) {
     return ascii.replace(/~/g,      '\\lnot{}')
                 .replace(/\[\]/g,   '\\Box{}')
                 .replace(/<>/g,     '\\Diamond{}')
+                .replace(/K\[/g,     'K_')
+                .replace(/\]/g,     '')
                 .replace(/ & /g,    '\\land{}')
                 .replace(/ \| /g,   '\\lor{}')
                 .replace(/ <-> /g,  '\\leftrightarrow{}')
@@ -86,6 +94,8 @@ var MPL = (function (FormulaParser) {
     return ascii.replace(/~/g,    '\u00ac')
                 .replace(/\[\]/g, '\u25a1')
                 .replace(/<>/g,   '\u25ca')
+                // .replace(/K\[/g,  'K[') don't change from ascii for knowledge operator
+                // .replace(/\]/g,   ']')  don't change from ascii for knowledge operator
                 .replace(/&/g,    '\u2227')
                 .replace(/\|/g,   '\u2228')
                 .replace(/<->/g,  '\u2194')
@@ -142,31 +152,40 @@ var MPL = (function (FormulaParser) {
     // Array of states (worlds) in model.
     // Each state is an object with two properties:
     // - assignment: a truth assignment (in which only true values are actually stored)
-    // - successors: an array of successor state indices (in lieu of a separate accessibility relation)
-    // ex: [{assignment: {},          successors: [0,1]},
+    // - successors: an array of successors, each successor is an accessible target state and an agent
+    // ex: [{assignment: {},          successors: [{target: 0, agent: 'a'}, {target: 1, agent: 'a'}]},
     //      {assignment: {'p': true}, successors: []   }]
     var _states = [];
 
     /**
      * Adds a transition to the model, given source and target state indices.
      */
-    this.addTransition = function (source, target) {
+    this.addTransition = function (source, target, agent) {
       if (!_states[source] || !_states[target]) return;
 
-      var successors = _states[source].successors,
-          index = successors.indexOf(target);
-      if (index === -1) successors.push(target);
+      const successors = _states[source].successors;
+      const isTransitionNew = successors.every((el) => el.target !== target || el.agent !== agent);
+
+      if (isTransitionNew) {
+        successors.push({ target, agent });
+        history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
+      }
     };
 
     /**
      * Removes a transition from the model, given source and target state indices.
      */
-    this.removeTransition = function (source, target) {
+    this.removeTransition = function (source, target, agent) {
       if (!_states[source]) return;
 
-      var successors = _states[source].successors,
-          index = successors.indexOf(target);
-      if (index !== -1) successors.splice(index, 1);
+      const successors = _states[source].successors;
+      const index = successors.findIndex((el) => el.target === target && el.agent === agent);
+      const isTransitionFound = index !== -1;
+
+      if (isTransitionFound) {
+        successors.splice(index, 1);
+        history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
+      }
     };
 
     /**
@@ -188,6 +207,9 @@ var MPL = (function (FormulaParser) {
           processedAssignment[propvar] = assignment[propvar];
 
       _states.push({assignment: processedAssignment, successors: []});
+      history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
+      const stateIndex = _states.length - 1;
+      return stateIndex;
     };
 
     /**
@@ -197,9 +219,11 @@ var MPL = (function (FormulaParser) {
       if (!_states[state]) return;
 
       var stateAssignment = _states[state].assignment;
-      for (var propvar in assignment)
+      for (var propvar in assignment) {
         if (assignment[propvar] === true) stateAssignment[propvar] = true;
         else if (assignment[propvar] === false) delete stateAssignment[propvar];
+      }
+      history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
     };
 
     /**
@@ -213,6 +237,7 @@ var MPL = (function (FormulaParser) {
       _states.forEach(function (source, index) {
         if (source) self.removeTransition(index, state);
       });
+      history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
     };
 
     /**
@@ -240,64 +265,92 @@ var MPL = (function (FormulaParser) {
 
     /**
      * Returns current model as a compact string suitable for use as a URL parameter.
-     * ex: [{assignment: {'q': true}, successors: [0,2]}, null, {assignment: {}, successors: []}]
-     *     compresses to 'AqS0,2;;AS;'
+     * ex: [{
+     *        assignment: {'q': true},
+     *        successors: [{target: 0, agent: 'a'}, {target: 2, agent: 'a'}]
+     *      },
+     *      null,
+     *      {assignment: {}, successors: []}
+     *      ]
+     *     compresses to 'AqS0a,2a;;AS;'
      */
     this.getModelString = function () {
-      var modelString = '';
+      let modelString = '';
 
-      _states.forEach(function (state) {
-        if (state) {
-          modelString += 'A' + Object.keys(state.assignment).join();
-          modelString += 'S' + state.successors.join();
-        }
-        modelString += ';';
-      });
+      for (const state of _states) {
+        modelString += this.getStateString(state);
+      }
 
-      return modelString;
+      return modelString.slice(0, modelString.length-1); // remove trailing ';'
     };
+
+    /**
+     * Returns the given state represented as a compact string, used as part of a
+     * compact model string.
+     */
+    this.getStateString = function (state) {
+      if (!state) {
+        return ';';
+      } else {
+        let successorString = '';
+          for (const successor of state.successors) {
+            successorString += successor.target + successor.agent + ',';
+          }
+
+        return 'A' + Object.keys(state.assignment).join('') + 'S' + successorString + ';';
+      }
+    }
 
     /**
      * Restores a model from a given model string.
      */
     this.loadFromModelString = function (modelString) {
-      var regex = /^(?:;|(?:A|A(?:\w+,)*\w+)(?:S|S(?:\d+,)*\d+);)+$/;
-      if (!regex.test(modelString)) return;
+      this.removeAllStatesAndTransitions();
 
-      _states = [];
+      const transitionsToAdd = [];
+      for (const stateString of modelString.split(';')) {
+        if (stateString === '') {
+          this.addState();
+        } else {
+          const indexOfA = stateString.lastIndexOf('A');
+          const indexOfS = stateString.lastIndexOf('S');
+          if (indexOfA === -1 || indexOfS === -1) {
+            return;
+          }
 
-      var self = this,
-          successorLists = [],
-          inputStates = modelString.split(';').slice(0, -1);
+          const propvarsSubstring = stateString.slice(indexOfA+1, indexOfS);
+          let assignment = {};
+          for (const propvar of propvarsSubstring) {
+            assignment[propvar] = true;
+          }
+          const stateIndex = this.addState(assignment);
 
-      // restore states
-      inputStates.forEach(function (state) {
-        if (!state) {
-          _states.push(null);
-          successorLists.push(null);
-          return;
+          const transitionsSubstring = stateString.slice(indexOfS+1);
+          const transitionStrings = transitionsSubstring.split(',');
+          for (const transitionString of transitionStrings) {
+            if (transitionString === '') {
+              break;
+            }
+            const targetString = transitionString.slice(0, transitionString.length - 1);
+            const targetIndex = Number.parseInt(targetString);
+            const agent = transitionString[transitionString.length - 1];
+            transitionsToAdd.push([stateIndex, targetIndex, agent]);
+          }
         }
-
-        var stateProperties = state.match(/A(.*)S(.*)/).slice(1, 3)
-                                   .map(function (substr) { return (substr ? substr.split(',') : []); });
-
-        var assignment = {};
-        stateProperties[0].forEach(function (propvar) { assignment[propvar] = true; });
-        _states.push({assignment: assignment, successors: []});
-
-        var successors = stateProperties[1].map(function (succState) { return +succState; });
-        successorLists.push(successors);
-      });
-
-      // restore transitions
-      successorLists.forEach(function (successors, source) {
-        if (!successors) return;
-
-        successors.forEach(function (target) {
-          self.addTransition(source, target);
-        });
-      });
+      }
+      // transitions must be added after all states are added becase the states being referenced by
+      // the transitions must be present when the transition is added
+      for (const [stateIndex, targetIndex, agent] of transitionsToAdd) {
+        this.addTransition(stateIndex, targetIndex, agent);
+      }
     };
+
+    /**
+     * Resets the model to its initial state with no states or transitions
+     */
+    this.removeAllStatesAndTransitions = function () {
+      _states = [];
+    }
   }
 
   /**
@@ -309,7 +362,11 @@ var MPL = (function (FormulaParser) {
       return model.valuation(json.prop, state);
     else if (json.neg)
       return !_truth(model, state, json.neg);
-    else if (json.conj)
+    else if (json.kno_end && json.kno_end[0].kno_start && json.kno_end[0].kno_start.prop) {
+      const agent = json.kno_end[0].kno_start.prop;
+      return model.getSuccessorsOf(state)
+        .every((succ) => succ.agent !== agent || _truth(model, succ.target, json.kno_end[1]));
+    } else if (json.conj)
       return (_truth(model, state, json.conj[0]) && _truth(model, state, json.conj[1]));
     else if (json.disj)
       return (_truth(model, state, json.disj[0]) || _truth(model, state, json.disj[1]));
@@ -318,9 +375,9 @@ var MPL = (function (FormulaParser) {
     else if (json.equi)
       return (_truth(model, state, json.equi[0]) === _truth(model, state, json.equi[1]));
     else if (json.nec)
-      return model.getSuccessorsOf(state).every(function (succState) { return _truth(model, succState, json.nec); });
+      return model.getSuccessorsOf(state).every((succ) => _truth(model, succ.target, json.nec));
     else if (json.poss)
-      return model.getSuccessorsOf(state).some(function (succState) { return _truth(model, succState, json.poss); });
+      return model.getSuccessorsOf(state).some((succ) => _truth(model, succ.target, json.poss));
     else
       throw new Error('Invalid formula!');
   }
