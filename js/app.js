@@ -670,14 +670,15 @@ function mouseup() {
 }
 
 function removeLinkFromModel(link) {
-  var sourceId = link.source.id,
-      targetId = link.target.id;
+  const sourceId = link.source.id;
+  const targetId = link.target.id;
+  const agent = link.agent;
 
   // remove leftward transition
-  if(link.left) model.removeTransition(targetId, sourceId);
+  if(link.left) model.removeTransition(targetId, sourceId, agent);
 
   // remove rightward transition
-  if(link.right) model.removeTransition(sourceId, targetId);
+  if(link.right) model.removeTransition(sourceId, targetId, agent);
 }
 
 function spliceLinksForNode(node) {

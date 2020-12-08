@@ -182,7 +182,12 @@ var MPL = (function (FormulaParser) {
       if (!_states[source]) return;
 
       const successors = _states[source].successors;
-      const index = successors.findIndex((el) => el.target === target && el.agent === agent);
+      let index;
+      if (agent) {
+        index = successors.findIndex((el) => el.target === target && el.agent === agent);
+      } else {
+        index = successors.findIndex((el) => el.target === target);
+      }
       const isTransitionFound = index !== -1;
 
       if (isTransitionFound) {
@@ -293,7 +298,7 @@ var MPL = (function (FormulaParser) {
      */
     this.getStateString = function (state) {
       if (!state) {
-        return ';';
+        return '';
       } else {
         let successorString = '';
           for (const successor of state.successors) {
