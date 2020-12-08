@@ -19,15 +19,15 @@ var MPL = (function (FormulaParser) {
     { symbol: '~',  key: 'neg',  precedence: 5 },
     { symbol: '[]', key: 'nec',  precedence: 5 },
     { symbol: '<>', key: 'poss', precedence: 5 },
-    { symbol: 'K[', key: 'kno_start', precedence: 5 } // the operand to K[ must be a var
+    { symbol: 'K[', key: 'kno_start', precedence: 4 }
   ];
 
   var binaries = [
+    { symbol: ']', key: 'kno_end', precedence: 4, associativity: 'right' }, // the left operand to kno_end must be kno_start
     { symbol: '&',   key: 'conj', precedence: 3, associativity: 'right' },
     { symbol: '|',   key: 'disj', precedence: 2, associativity: 'right' },
     { symbol: '->',  key: 'impl', precedence: 1, associativity: 'right' },
-    { symbol: '<->', key: 'equi', precedence: 0, associativity: 'right' },
-    { symbol: ']', key: 'kno_end', precedence: 4, associativity: 'left' } // the left operand to kno_end must be kno_start
+    { symbol: '<->', key: 'equi', precedence: 0, associativity: 'right' }
   ];
 
   var MPLParser = new FormulaParser(variableKey, unaries, binaries);
@@ -54,11 +54,14 @@ var MPL = (function (FormulaParser) {
       return '[]' + _jsonToASCII(json.nec);
     else if (json.poss)
       return '<>' + _jsonToASCII(json.poss);
-    else if (json.kno_start && json.kno_start.prop)
-      return 'K[' + json.kno_start.prop;
-    else if (json.kno_end && json.kno_end.length === 2 && json.kno_end[0].kno_start)
-      return _jsonToASCII(json.kno_end[0]) + '](' + _jsonToASCII(json.kno_end[1]) + ')';
-    else if (json.conj && json.conj.length === 2)
+    else if (json.kno_start &&
+             json.kno_start.kno_end &&
+             json.kno_start.kno_end[0].prop &&
+             json.kno_start.kno_end.length === 2
+    ) {
+      const agent = json.kno_start.kno_end[0].prop;
+      return 'K[' + agent + '](' + _jsonToASCII(json.kno_start.kno_end[1]) + ')';
+    } else if (json.conj && json.conj.length === 2)
       return '(' + _jsonToASCII(json.conj[0]) + ' & ' + _jsonToASCII(json.conj[1]) + ')';
     else if (json.disj && json.disj.length === 2)
       return '(' + _jsonToASCII(json.disj[0]) + ' | ' + _jsonToASCII(json.disj[1]) + ')';
@@ -362,10 +365,11 @@ var MPL = (function (FormulaParser) {
       return model.valuation(json.prop, state);
     else if (json.neg)
       return !_truth(model, state, json.neg);
-    else if (json.kno_end && json.kno_end[0].kno_start && json.kno_end[0].kno_start.prop) {
-      const agent = json.kno_end[0].kno_start.prop;
-      return model.getSuccessorsOf(state)
-        .every((succ) => succ.agent !== agent || _truth(model, succ.target, json.kno_end[1]));
+    else if (json.kno_start && json.kno_start.kno_end && json.kno_start.kno_end[0].prop) {
+      const agent = json.kno_start.kno_end[0].prop;
+      return model.getSuccessorsOf(state).every(
+          (succ) => succ.agent !== agent || _truth(model, succ.target, json.kno_start.kno_end[1])
+      );
     } else if (json.conj)
       return (_truth(model, state, json.conj[0]) && _truth(model, state, json.conj[1]));
     else if (json.disj)
