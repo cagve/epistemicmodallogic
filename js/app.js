@@ -42,7 +42,7 @@ states.forEach(function(state) {
   if(!state) { lastNodeId++; return; }
 
   var defaultVals = propvars.map(function() { return false; }),
-      node = {id: ++lastNodeId, vals: defaultVals, reflexive: false};
+      node = {id: ++lastNodeId, vals: defaultVals};
 
   for(var propvar in state) {
     var index = propvars.indexOf(propvar);
@@ -58,7 +58,7 @@ for (const source of nodes) {
   for (const succ of model.getSuccessorsOf(sourceId)) {
     const targetId = succ.target;
     if(sourceId === targetId) {
-      source.reflexive = true;
+      links.push({source: source, target: source, left: true, right: true, agent: succ.agent });
       continue;
     }
 
@@ -347,9 +347,15 @@ function tick() {
     if (d.agent === 'd') angle = 0.5;
     if (d.agent === 'e') angle = 1;
 
+    if (d.source === d.target) {
+      let selfLoopOffset = [1, 0];
+      selfLoopOffset = rotateByAngle(selfLoopOffset, -angle);
+      return getDoubleCurvedSVGPath([d.source.x, d.source.y], [d.source.x+selfLoopOffset[0], d.source.y+selfLoopOffset[1]], 40);
+    }
+
     const facing = normalize([
       d.target.x - d.source.x,
-      deltaY = d.target.y - d.source.y
+      d.target.y - d.source.y
     ]);
     const sourceNorm = rotateByAngle(facing, -angle);
     const targetNorm = rotateByAngle(facing, angle + Math.PI);
@@ -462,7 +468,6 @@ function restart() {
   // update existing nodes (reflexive & selected visual states)
   circle.selectAll('circle')
     .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
-    .classed('reflexive', function(d) { return d.reflexive; });
 
   // add new nodes
   var g = circle.enter().append('svg:g');
@@ -472,7 +477,6 @@ function restart() {
     .attr('r', 15)
     .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
     .style('stroke', function(d) { return d3.rgb(colors(d.id)).darker().toString(); })
-    .classed('reflexive', function(d) { return d.reflexive; })
     .on('mouseover', function(d) {
       if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
       // enlarge target node
@@ -599,7 +603,7 @@ function mousedown() {
   // insert new node at point
   var point = d3.mouse(this),
       defaultVals = propvars.map(function() { return false; }),
-      node = {id: ++lastNodeId, vals: defaultVals, reflexive: false};
+      node = {id: ++lastNodeId, vals: defaultVals};
   node.x = point[0];
   node.y = point[1];
   nodes.push(node);
@@ -759,12 +763,14 @@ function keydown() {
     case 82: // R
       if(selected_node) {
         // toggle node reflexivity
-        if(selected_node.reflexive) {
-          selected_node.reflexive = false;
+        const reflexiveLink = links.filter(l => l.source === selected_node && l.target === selected_node && l.agent === currentEpistemicAgent)[0];
+        if(reflexiveLink) {
           model.removeTransition(selected_node.id, selected_node.id, currentEpistemicAgent);
+          removeLinkFromModel(reflexiveLink);
+          links.splice(links.indexOf(reflexiveLink), 1);
         } else {
-          selected_node.reflexive = true;
           model.addTransition(selected_node.id, selected_node.id, currentEpistemicAgent);
+          links.push({source: selected_node, target: selected_node, left: true, right: true, agent: currentEpistemicAgent});
         }
       } else if(selected_link) {
         var sourceId = selected_link.source.id,

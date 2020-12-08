@@ -298,7 +298,7 @@ var MPL = (function (FormulaParser) {
      */
     this.getStateString = function (state) {
       if (!state) {
-        return '';
+        return ';';
       } else {
         let successorString = '';
           for (const successor of state.successors) {
@@ -316,9 +316,11 @@ var MPL = (function (FormulaParser) {
       this.removeAllStatesAndTransitions();
 
       const transitionsToAdd = [];
+      const statesToRemove = [];
       for (const stateString of modelString.split(';')) {
         if (stateString === '') {
-          this.addState();
+          const stateIndex = this.addState();
+          statesToRemove.push(stateIndex);
         } else {
           const indexOfA = stateString.lastIndexOf('A');
           const indexOfS = stateString.lastIndexOf('S');
@@ -350,6 +352,9 @@ var MPL = (function (FormulaParser) {
       // the transitions must be present when the transition is added
       for (const [stateIndex, targetIndex, agent] of transitionsToAdd) {
         this.addTransition(stateIndex, targetIndex, agent);
+      }
+      for (const stateIndex of statesToRemove) {
+        this.removeState(stateIndex);
       }
     };
 

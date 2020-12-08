@@ -231,11 +231,6 @@ g.false circle.node {
   stroke-width: 0;
 }
 
-circle.node.reflexive {
-  stroke: #000 !important;
-  stroke-width: 2.5px;
-}
-
 text {
   font-size: 14px;
   pointer-events: none;
