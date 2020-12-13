@@ -325,6 +325,7 @@ function setVarForSelectedNode(varnum, value) {
   var update = {};
   update[propvars[varnum]] = value;
   model.editState(selected_node.id, update);
+  onModelModified();
 
   //update buttons
   var row = d3.select(varTableRows[0][varnum]);
@@ -531,6 +532,7 @@ function restart() {
 
       // add transition to model
       model.addTransition(mousedown_node.id, mouseup_node.id, currentEpistemicAgent);
+      onModelModified();
 
       // add link to graph (update if exists)
       // note: links are strictly source < target; arrows separately specified by booleans
@@ -591,6 +593,31 @@ function restart() {
   force.start();
 }
 
+function onModelModified() {
+  const reflexiveCheckEl = document.getElementById('reflexive-check');
+  const symmetricCheckEl = document.getElementById('symmetric-check');
+  const transitiveCheckEl = document.getElementById('transitive-check');
+
+  let reflexiveForActiveAgents = true;
+  let symmetricForActiveAgents = true;
+  let transitiveForActiveAgents = true;
+
+  const activeAgents = model.getActiveAgents();
+  for (const agent of activeAgents) {
+    reflexiveForActiveAgents = reflexiveForActiveAgents && model.isReflexive(agent);
+    symmetricForActiveAgents = symmetricForActiveAgents && model.isSymmetric(agent);
+    transitiveForActiveAgents = transitiveForActiveAgents && model.isTransitive(agent);
+  }
+
+  reflexiveCheckEl.checked = reflexiveForActiveAgents;
+  symmetricCheckEl.checked = symmetricForActiveAgents;
+  transitiveCheckEl.checked = transitiveForActiveAgents;
+
+  document.getElementById('checks-title').innerHTML =
+    `For active agent${activeAgents.length === 1 ? '' : 's'} ${activeAgents.join()} :`;
+}
+onModelModified();
+
 function mousedown() {
   // prevent I-bar on drag
   d3.event.preventDefault();
@@ -610,6 +637,7 @@ function mousedown() {
 
   // add state to model
   model.addState();
+  onModelModified();
 
   restart();
 }
@@ -683,6 +711,7 @@ function removeLinkFromModel(link) {
 
   // remove rightward transition
   if(link.right) model.removeTransition(sourceId, targetId, agent);
+  onModelModified();
 }
 
 function spliceLinksForNode(node) {
@@ -722,6 +751,7 @@ function keydown() {
         removeLinkFromModel(selected_link);
         links.splice(links.indexOf(selected_link), 1);
       }
+      onModelModified();
       selected_link = null;
       setSelectedNode(null);
       restart();
@@ -741,6 +771,7 @@ function keydown() {
           model.addTransition(sourceId, targetId, agent);
         }
       }
+      onModelModified();
       restart();
       break;
     case 76: // L
@@ -758,6 +789,7 @@ function keydown() {
           model.removeTransition(sourceId, targetId, agent);
         }
       }
+      onModelModified();
       restart();
       break;
     case 82: // R
@@ -786,6 +818,7 @@ function keydown() {
           model.addTransition(sourceId, targetId, agent);
         }
       }
+      onModelModified();
       restart();
       break;
   }

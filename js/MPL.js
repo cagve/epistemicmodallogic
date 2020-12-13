@@ -197,12 +197,16 @@ var MPL = (function (FormulaParser) {
     };
 
     /**
-     * Returns an array of successor states for a given state index.
+     * Returns an array of successor states for a given state index and optional agent.
      */
-    this.getSuccessorsOf = function (source) {
+    this.getSuccessorsOf = function (source, agent) {
       if (!_states[source]) return undefined;
 
-      return _states[source].successors;
+      if (agent) {
+        return _states[source].successors.filter(successor => successor.agent === agent);
+      } else {
+        return _states[source].successors;
+      }
     };
 
     /**
@@ -363,6 +367,72 @@ var MPL = (function (FormulaParser) {
      */
     this.removeAllStatesAndTransitions = function () {
       _states = [];
+    }
+
+    /**
+     * An agent's relation is reflexive iff ∀w Rww
+     * i.e. for all states w: w is a successor of itself.
+     */
+    this.isReflexive = function(agent) {
+      return _states.every((stateW, w) => stateW === null || this.isSuccessor(w, w, agent));
+    }
+
+    /**
+     * An agent's relation is transitive iff ∀u∀v∀w (Ruv∧Rvw)→Ruw
+     * i.e. for all states u, v, and w: If v is a successor of u and w is a successor of v, then
+     * w is a successor of u.
+     */
+    this.isTransitive = function(agent) {
+      return _states.every((stateU, u) =>
+        stateU === null ||
+        this.getSuccessorsOf(u, agent).every(successorV =>
+          this.getSuccessorsOf(successorV.target, agent).every(successorW =>
+            this.isSuccessor(u, successorW.target, agent)
+          )
+        )
+      );
+    }
+
+    /**
+     * An agent's relation is symmetric iff ∀w∀v Rwv -> Rvw
+     * i.e. for all states w and v: If v is a successor of w, then w must be a successor of v.
+     */
+    this.isSymmetric = function(agent) {
+      return _states.every((stateW, w) =>
+        stateW === null ||
+        this.getSuccessorsOf(w, agent).every(successorV =>
+          this.isSuccessor(successorV.target, w, agent)
+        )
+      );
+    }
+
+    /**
+     * Get's all the agents currently present in all state's successors.
+     */
+    this.getActiveAgents = function() {
+      const activeAgents = new Set();
+      for (const state of _states) {
+        if (state !== null) {
+          for (const successor of state.successors) {
+            activeAgents.add(successor.agent);
+          }
+        }
+      }
+      return [...activeAgents].sort();
+    }
+
+    /**
+     * Gives a boolean answer for whether state2 is a successor of state1.
+     */
+    this.isSuccessor = function(stateIndex1, stateIndex2, agent) {
+      const state1 = _states[stateIndex1];
+      if (!state1) return false;
+      if (agent) {
+        return state1.successors
+          .some(successor => successor.agent === agent && successor.target === stateIndex2);
+      } else {
+        return state1.successors.some(successor => successor.target === stateIndex2);
+      }
     }
   }
 

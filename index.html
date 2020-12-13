@@ -20,9 +20,6 @@
             <i class="icon-eye-open icon-white"></i> Evaluate Formula
           </button>
         </div>
-        <!--<div id="model-link">
-          <button class="btn btn-inverse" onclick="showLinkDialog()">Link to Current Model</button>
-        </div>-->
         <div id="app-body">
           <div class="panel tab-content">
             <div id="edit-pane" class="tab-pane active">
@@ -46,7 +43,7 @@
                   <button class="btn btn-secondary" onclick="setVarCount(5)">5</button>
                 </div>
               </div>
-              <div class="alert alert-info" style="padding-bottom: 45px;">
+              <div class="alert alert-info">
                 <div class="selected-node-id">No state selected</div>
                 <table class="propvars inactive">
                   <tbody>
@@ -120,6 +117,15 @@
                 </ul>
               </div>
             </div>
+          </div>
+          <div style="position: absolute; bottom: 10px; left: 310px; z-index: 10;">
+            <i style="color: gray;" id="checks-title">For all agents:</i><br>
+            <input type="checkbox" class="form-check-input ml-1" id="reflexive-check" disabled>
+            <label class="form-check-label ml-4" for="reflexive-check">Reflexive</label><br>
+            <input type="checkbox" class="form-check-input ml-1" id="symmetric-check" disabled>
+            <label class="form-check-label ml-4" for="symmetric-check">Symmetric</label><br>
+            <input type="checkbox" class="form-check-input ml-1" id="transitive-check" disabled>
+            <label class="form-check-label ml-4" for="transitive-check">Transitive</label>
           </div>
           <div class="graph"></div>
           <div class="current-formula inactive"></div>
