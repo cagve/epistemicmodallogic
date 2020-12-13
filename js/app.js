@@ -200,18 +200,6 @@ function evaluateFormula() {
     return;
   }
 
-  // check formula for bad vars
-  var varsInUse = propvars.slice(0, varCount);
-  var badVars = (formula.match(/\w+/g) || []).filter(function(v) {
-    return v !== 'K' && varsInUse.indexOf(v) === -1 && epistemicAgents.indexOf(v) === -1;
-  });
-  if(badVars.length) {
-    evalOutput
-      .html('<div class="alert">Invalid variables in formula!</div>')
-      .classed('inactive', false);
-    return;
-  }
-
   // parse formula and catch bad input
   var wff = null;
   try {
@@ -222,6 +210,27 @@ function evaluateFormula() {
       .html('<div class="alert">Invalid formula!</div>')
       .classed('inactive', false);
     return;
+  }
+
+  // check formula for bad vars or agents
+  const propsAndAgentsInWff = getWffAgentsAndProps(wff.json());
+  for (const propOrAgent of propsAndAgentsInWff) {
+    if (propOrAgent.prop) {
+      if (!propvars.includes(propOrAgent.prop)) {
+        evalOutput
+          .html(`<div class="alert">Formula contains invalid propositional variable: <b>${propOrAgent.prop}</b></div>`)
+          .classed('inactive', false);
+        return;
+      };
+    }
+    if (propOrAgent.agent) {
+      if (!epistemicAgents.includes(propOrAgent.agent)) {
+        evalOutput
+          .html(`<div class="alert">Formula contains invalid agent: <b>${propOrAgent.agent}</b></div>`)
+          .classed('inactive', false);
+        return;
+      };
+    }
   }
 
   // evaluate formula at each state in model
@@ -256,6 +265,38 @@ function evaluateFormula() {
   // re-render LaTeX
   MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentFormula.node()]);
   MathJax.Hub.Queue(['Typeset', MathJax.Hub, evalOutput.node()]);
+}
+
+/**
+   * Returns an array of all propositional variables and agents used in the given Wff json.
+   * i.e. [{ prop: 'p' }, { prop: 'q' }, { agent: 'b' }]
+   */
+function getWffAgentsAndProps(json) {
+  if (json.prop)
+    return [{ prop: json.prop }];
+  else if (json.neg)
+    return getWffAgentsAndProps(json.neg);
+  else if (json.nec)
+    return getWffAgentsAndProps(json.nec);
+  else if (json.poss)
+    return getWffAgentsAndProps(json.poss);
+  else if (json.kno_start &&
+            json.kno_start.kno_end &&
+            json.kno_start.kno_end[0].prop &&
+            json.kno_start.kno_end.length === 2
+  ) {
+    const agent = json.kno_start.kno_end[0].prop;
+    return [{ agent }].concat(getWffAgentsAndProps(json.kno_start.kno_end[1]));
+  } else if (json.conj && json.conj.length === 2)
+    return getWffAgentsAndProps(json.conj[0]).concat(getWffAgentsAndProps(json.conj[1]));
+  else if (json.disj && json.disj.length === 2)
+    return getWffAgentsAndProps(json.disj[0]).concat(getWffAgentsAndProps(json.disj[1]));
+  else if (json.impl && json.impl.length === 2)
+    return getWffAgentsAndProps(json.impl[0]).concat(getWffAgentsAndProps(json.impl[1]));
+  else if (json.equi && json.equi.length === 2)
+    return getWffAgentsAndProps(json.equi[0]).concat(getWffAgentsAndProps(json.equi[1]));
+  else
+    throw new Error('Invalid JSON for formula!');
 }
 
 // set selected node and notify panel of changes
