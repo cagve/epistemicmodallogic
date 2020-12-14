@@ -170,7 +170,7 @@ svg.edit:not(.active):not(.ctrl) {
 
 path.link {
   fill: none;
-  stroke-width: 4px;
+  stroke-width: 3px;
   cursor: default;
 }
 
@@ -253,19 +253,19 @@ text.id {
   font-weight: bold;
 }
 
-#whatis h2 {
-  margin-top: 50px;
+.text-section {
+  width: 650px;
+  line-height: 1.6;
+  margin: 0 auto;
 }
 
-#whatis h3 {
-  margin-top: 30px;
-  border-top: 1px solid #bce8f1;
-  color: #3a87ad;
-  letter-spacing: 2px;
+section h2 {
+  font-weight: bold;
+  margin-top: 60px;
 }
 
-#whatis h3:nth-of-type(2) {
-  text-align: right;
+section h3 {
+  margin-top: 40px;
 }
 
 .table-striped tr:last-child td:first-child {

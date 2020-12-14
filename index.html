@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Epistemic Logic Playground</title>
+    <title>Dynamic Epistemic Logic Playground</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link rel="stylesheet" href="css/app.css">
   </head>
@@ -10,7 +10,7 @@
   <body>
     <div id="page-container">
       <a href="https://github.com/vezwork/modallogic"><img class="github-link" src="img/blacktocat-32.png" title="Fork me on GitHub"></a>
-      <h1>Epistemic Logic Playground</h1>
+      <h1>Dynamic Epistemic Logic Playground</h1>
       <section id="app">
         <div id="mode-select" class="btn-group">
           <button class="btn btn-primary active" onclick="setAppMode(MODE.EDIT)">
@@ -44,7 +44,7 @@
                 </div>
               </div>
               <div class="alert alert-info">
-                <div class="selected-node-id">No state selected</div>
+                <div class="selected-node-id">No world selected</div>
                 <table class="propvars inactive">
                   <tbody>
                     <tr class=""><td class="var-name">p:</td><td class="var-value"><div class="btn-group">
@@ -70,34 +70,14 @@
                   </tbody>
                 </table>
               </div>
-              <!-- <div class="instructions">
-                <ul class="unstyled">
-                  <li class="mb-1">Click in the open space to <strong>add a state</strong></li>
-                  <li class="mb-1">Drag between states to <strong>add a transition</strong></li>
-                  <li class="mb-1">Ctrl-drag a state to <strong>move</strong> graph layout</li>
-                  <li class="mb-1">Click a state or a transition to <strong>select</strong> it</li>
-                  <li class="mb-1">
-                    When a state is selected:
-                    <ul>
-                      <li><strong>R</strong> toggles reflexivity</li>
-                      <li><strong>Delete</strong> removes the state</li>
-                    </ul>
-                  </li>
-                  <li class="mb-1">
-                    When a transition is selected:
-                    <ul>
-                      <li><strong>L</strong>(eft), <strong>R</strong>(ight), <strong>B</strong>(oth) change direction</li>
-                      <li><strong>Delete</strong> removes the transition</li>
-                    </ul>
-                  </li>
-                </ul>
-              </div> -->
             </div>
             <div id="eval-pane" class="tab-pane">
               <div class="eval-input">
                 Enter a formula:
-                <input type="text" placeholder="e.g., (p -> []p)">
-                <button class="btn btn-block btn-secondary" onclick="evaluateFormula()">Evaluate</button>
+                <input type="text" placeholder="e.g., (p -> K{a}p)">
+                <button class="btn btn-primary" onclick="evaluateFormula()">Evaluate</button>
+                or
+                <button class="btn btn-dark" onclick="announceFormula()">[📣]Announce</button>
               </div>
               <div class="eval-output inactive">
               </div>
@@ -107,11 +87,11 @@
                     When entering a formula:
                     <ul class="pl-2">
                       <li>use <code>~A</code> for $\lnot{}A$</li>
-                      <li>use <code>K[a]A</code> for $K_aA$</li>
                       <li>use <code>(A &amp; B)</code> for $(A\land{}B)$</li>
                       <li>use <code>(A | B)</code> for $(A\lor{}B)$</li>
                       <li>use <code>(A -&gt; B)</code> for $(A\rightarrow{}B)$</li>
-                      <li>use <code>(A &lt;-&gt; B)</code> for $(A\leftrightarrow{}B)$</li>
+                      <li>use <code>K{a,b,c}A</code> for $K_{a,b,c}A$</li>
+                      <li>use <code>[A]B</code> for $[A]B$</li>
                     </ul>
                   </li>
                 </ul>
@@ -119,7 +99,7 @@
             </div>
           </div>
           <div style="position: absolute; bottom: 10px; left: 310px; z-index: 10;">
-            <i style="color: gray;" id="checks-title">For all agents:</i><br>
+            <i style="color: gray;" id="checks-title">loading...</i><br>
             <input type="checkbox" class="form-check-input ml-1" id="reflexive-check" disabled>
             <label class="form-check-label ml-4" for="reflexive-check">Reflexive</label><br>
             <input type="checkbox" class="form-check-input ml-1" id="symmetric-check" disabled>
@@ -131,18 +111,18 @@
           <div class="current-formula inactive"></div>
         </div>
       </section>
-      <section id="whatis">
-        <h2>Instructions</h2>
+      <section class="text-section">
+        <h2>Editing Instructions</h2>
         <ul class="unstyled">
-          <li class="mb-1">Click in the open space to <strong>add a state</strong></li>
-          <li class="mb-1">Drag between states to <strong>add a transition for the current agent</strong></li>
-          <li class="mb-1">Ctrl-drag a state to <strong>move</strong> graph layout</li>
-          <li class="mb-1">Click a state or a transition to <strong>select</strong> it</li>
+          <li class="mb-1">Click in the open space to <strong>add a world</strong></li>
+          <li class="mb-1">Drag between worlds to <strong>add a transition for the current agent</strong></li>
+          <li class="mb-1">Ctrl-drag a world to <strong>move</strong> graph layout</li>
+          <li class="mb-1">Click a world or a transition to <strong>select</strong> it</li>
           <li class="mb-1">
-            When a state is selected:
+            When a world is selected:
             <ul>
-              <li><strong>R</strong> toggles reflexivity</li>
-              <li><strong>Delete</strong> removes the state</li>
+              <li><strong>R</strong> toggles reflexivity for the current agent</li>
+              <li><strong>Delete</strong> removes the world</li>
             </ul>
           </li>
           <li class="mb-1">
@@ -154,231 +134,144 @@
           </li>
           <li class="mb-1">Copy the URL from your browser's URL bar to share your model!</li>
         </ul>
-        <p></p>
-        <h2>For more information on Modal and Epistemic Logic:</h2>
+      </section>
+      <section class="text-section">
+        <h2>Examples</h2>
         <ul>
-          <li><a href="https://plato.stanford.edu/entries/dynamic-epistemic/appendix-A-kripke.html">Kripke models for modal logic (Stanford Encyclopedia of Philosophy)</a></li>
-        </ul>
-
-        <!--<h2>So what's modal logic, anyway?</h2>
-        <p>
-          <strong>Modal logic</strong> is a type of symbolic logic for capturing inferences about <strong>necessity</strong> and <strong>possibility</strong>.
-          As with other logical systems, the theory lies at the intersection of mathematics and philosophy, while important applications are found within computer science and linguistics.
-        </p>
-        <p>
-          This app is a graphical semantic calculator for a specific kind of modal logic, <strong>modal propositional logic</strong>, which extends propositional logic but lacks quantifiers (<abbr title="'for all', universal quantifier">&forall;</abbr> and <abbr title="'there exists', existential quantifier">&exist;</abbr>).
-          Let's take a whirlwind tour.
-        </p>
-        <h3>From propositional logic...</h3>
-        <p>
-          To start out, let's briefly recall the language and semantics of propositional logic, i.e., connectives and truth tables.<sup><abbr title="To keep things simple, we won't worry about syntactic matters like axiomatization and deduction here.">[1]</abbr></sup>
-          <br>The usual connectives are the following:
-        </p>
-        <table class="table table-striped connective-table">
-          <thead>
-            <tr><th>Symbol</th><th>Read as</th><th>Operation</th><th>Natural language example<sup><abbr title="The examples here are purely for illustration. In a natural language such as English, 'if' often does not correspond to logical implication; likewise for the other connectives.">[2]</abbr></sup></th></tr>
-          </thead>
-          <tbody>
-            <tr><td>$\lnot$</td><td>'not'</td><td>negation</td><td>It is <strong>not</strong> raining.</td></tr>
-            <tr><td>$\land$</td><td>'and'</td><td>conjunction</td><td>It is snowing <strong>and</strong> it is cold.</td></tr>
-            <tr><td>$\lor$</td><td>'or'</td><td>disjunction</td><td>It is raining <strong>or</strong> it is cold.</td></tr>
-            <tr><td>$\rightarrow$</td><td>'if...(then)'</td><td>implication</td><td><strong>If</strong> it is snowing, (<strong>then</strong>) it is cold.</td></tr>
-            <tr><td>$\leftrightarrow$</td><td>'iff'</td><td>equivalence</td><td>3 &times; 2 = 6 <strong>if and only if</strong> 3 + 3 = 6.</td></tr>
-          </tbody>
-        </table>
-        <p>
-          A typical (long-form) truth table would look something like this (using 0 for false and 1 for true):
-        </p>
-        <table class="table table-striped truth-table">
-          <thead>
-            <tr><th>$p$</th><th>$q$</th><th>$(q\rightarrow{}p)$</th><th>$(p\rightarrow{}(q\rightarrow{}p))$</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>0</td><td>0</td><td>1</td><td>1</td></tr>
-            <tr><td>0</td><td>1</td><td>0</td><td>1</td></tr>
-            <tr><td>1</td><td>0</td><td>1</td><td>1</td></tr>
-            <tr><td>1</td><td>1</td><td>1</td><td>1</td></tr>
-          </tbody>
-        </table>
-        <p>
-          So once we've fixed a truth value for each of the propositional variables, the truth value of any formula using those variables is deterministic.
-        </p>
-        <h3>...to modal propositional logic</h3>
-        <p>
-          Now, in modal logic, we add two new unary connectives to our familiar language:
-        </p>
-        <table class="table table-striped connective-table">
-          <thead>
-            <tr><th>Symbol</th><th>Read as</th><th>Operation</th><th>Natural language example<sup><abbr title="The examples here are purely for illustration. In a natural language such as English, 'if' often does not correspond to logical implication; likewise for the other connectives.">[2]</abbr></sup></th></tr>
-          </thead>
-          <tbody>
-            <tr><td>$\Box$</td><td>'box'</td><td>necessity</td><td>It <strong>must</strong> be cold outside.</td></tr>
-            <tr><td>$\Diamond$</td><td>'diamond'</td><td>possibility</td><td>It <strong>may</strong> be snowing.</td></tr>
-          </tbody>
-        </table>
-        <p>
-          Semantically, these modal connectives are interpreted with respect to <strong>possible worlds</strong>.
-          We can conceive of possible worlds in various ways, depending on what we're interested in modelling.
-          On the one hand, possible worlds might be hypothetical 'alternate universes': there is the 'actual world', the way things really are at the present moment, as well as an infinity of other 'worlds' which differ in ways both subtle (such as a world where my pen is simply on the opposite side of my desk) and dramatic (such as a world in which dinosaurs still roam Earth in 2013 CE).
-          Alternatively, possible worlds might be the various states of a computer, a computer program, or another system which evolves over time.
-        </p>
-        <p>
-          Regardless, if we have a proposition $p$ and current world $w$:
-        </p>
-        <div class="well">
-          <ul>
-            <li>$\Box{}p$ holds ($p$ is <strong>necessary</strong>) just when $p$ is true in all worlds accessible from $w$</li>
-            <li>$\Diamond{}p$ holds ($p$ is <strong>possible</strong>) just when $p$ is true in at least one world accessible from $w$</li>
-          </ul>
-        </div>
-        <p>
-          What does it mean for a world to be 'accessible'? The clearest example is surely that of a computer: an 'accessible' state is simply a successor state, one that is immediately reachable from the current state.
-          As such, the set of all possible worlds isn't just an unstructured mess, but is ordered by an <strong>accessibility relation</strong> that says which worlds we can get to from which others.
-        </p>
-        <div class="example">
-          <p>
-            Let's illustrate this further with an example from linguistics.
-            When one speaks of what may or must be so, we can view this as talking about what is true in some or all possible worlds.
-            Yet we're seldom concerned with every single possible world at once: when conversing about the current weather, things like pens and dinosaurs are typically far from one's mind.
-            Rather, we're only concerned with a relevant subset of these possibilities&mdash;just those worlds which are accessible from the actual world via some implicit relation.
-          </p>
-          <p>
-            The English sentences below show three kinds of accessibility relations at work:
-          </p>
-          <table class="table table-striped relation-table">
-            <thead>
-              <tr><th>Example sentence</th><th>Modality type</th><th>Accessible worlds</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>It <strong>must</strong> have rained overnight.</td><td>epistemic</td><td>worlds consistent with one's knowledge</td></tr>
-              <tr><td>You <strong>must</strong> arrive before noon.</td><td>deontic</td><td>worlds consistent with one's obligations</td></tr>
-              <tr><td>A triangle <strong>must</strong> have three vertices.</td><td>alethic</td><td>worlds consistent with logic (= all worlds)</td></tr>
-            </tbody>
-          </table>
-          <p>
-            These sentences might be represented as $\Box{}p$, $\Box{}q$, and $\Box{}r$, but the box operator has a noticeably different interpretation in each case.
-          </p>
-          <p>
-            In the first case, we can imagine someone who, upon leaving their house in the morning, notices that the sidewalk is wet.
-            Based on this observation, they conclude that it has rained overnight.
-            Here, the worlds under consideration are just those which are consistent with the speaker's knowledge, in particular, their observation of the sidewalk.
-            Thus the box means something like, 'Given what is known, it must be the case that...'.
-            This 'knowledge-based' interpretation of the modal operators is known as <strong>epistemic</strong> modality.
-          </p>
-          <p>
-            The second sentence might be uttered by airport staff to inform a passenger of the time that their flight boards.
-            In this case, the relevant worlds are those consistent with the passenger's obligations, namely, to get to their airplane punctually.
-            The box here means, 'Given what is obligated, it must be the case that...'.
-            This 'obligation-based' interpretation of the modal operators is known as <strong>deontic</strong> modality.
-          </p>
-          <p>
-            Finally, suppose that we remove all restrictions and let the modal operators range over every single possible world at once.
-            But we've talked about the infinity of possible worlds&mdash;what could they possibly all have in common?
-            One thing only: logical consistency.
-            Under this so-called <strong>alethic</strong> modality, the box now means, 'It is logically necessary that...'.
-            This interpretation may not be commonplace in daily conversation, but is useful for discussing mathematics, as in the third sentence: by definition, a triangle has three vertices, otherwise it wouldn't be a triangle!
-          </p>
-        </div>
-        <p>
-          Conveniently, we can view possible world semantics as an extension of truth tables.
-          In propositional logic, we only had to fix a truth value for each propositional variable once, but in modal logic, each propositional variable can take a different truth value at each possible world.
-          Even when two worlds have the same truth assignment, formulas with $\Box$ or $\Diamond$ might have a different truth value in each world, since the worlds accessible from each may not be the same.
-          Thus we might say that each possible world "has its own truth table".
-          A complete assignment of truth values to each variable at each world is known as a <strong>valuation</strong>.
-        </p>
-        <p>
-          Altogether, a set of possible worlds, an accessibility relation, and a valuation form a semantic model for modal logic, known as a <strong>Kripke model</strong>.
-          A Kripke model can be visualized as a directed graph, where nodes represent worlds, the set of edges represents the accessibility relation, and the valuation is indicated by annotating each node with its truth assignment.
-        </p>
-        <div class="example">
-          <p>
-            As a culminating example, let's take a look at the following graph, which happens to be the initial model for the app:
-          </p>
-          <div class="well svg-well">
-            <svg class="static" width="350" height="50">
-              <defs>
-                <marker id="end-arrow" viewBox="0 -5 10 10" refX="6" markerWidth="3" markerHeight="3" orient="auto">
-                  <path d="M0,-5L10,0L0,5" fill="#000"></path>
-                </marker>
-              </defs>
-              <g>
-                <path class="link" marker-end="url(#end-arrow)" d="M37,30L158,30"></path>
-                <path class="link" marker-end="url(#end-arrow)" d="M187,30L308,30"></path>
-              </g>
-              <g>
-                <g transform="translate(25,30)">
-                  <circle class="node" r="12" style="fill: #1f77b4; stroke: #15537d;"></circle>
-                  <text x="0" y="4" class="id">0</text>
-                  <text x="-21" y="-20">&not;p, &not;q</text>
-                </g>
-                <g transform="translate(175,30)">
-                  <circle class="node reflexive" r="12" style="fill: #ff7f0e; stroke: #b25809;"></circle>
-                  <text x="0" y="4" class="id">1</text>
-                  <text x="-14" y="-20">p, &not;q</text>
-                </g>
-                <g transform="translate(325,30)">
-                  <circle class="node" r="12" style="fill: #2ca02c; stroke: #1e701e;"></circle>
-                  <text x="0" y="4" class="id">2</text>
-                  <text x="-17" y="-20">&not;p, q</text>
-                </g>
-              </g>
-            </svg>
-          </div>
-          <p>
-            Using the computer program metaphor, imagine a scenario where $p$ stands for 'the program is running' and $q$ stands for 'the program has terminated'.
-            Then state 0 of our model represents the state where the program is about to launch (neither running nor terminated), state 1 is the running (and non-terminated) state, and state 2 is the terminated (and no longer running) state.
-            As for the accessibility relation: from the ready-to-launch state, the only option is to transition to the running state; at the running state, the program can either continue to run (the reflexive edge is indicated by a bold circle) or terminate; and the terminated state is the end of the line, so to speak.
-          </p>
-          <p>
-            We can then evaluate formulas based on this model. For instance, $\Diamond(p\land\lnot{}q)$ says 'there is a transition to a running-and-not-terminated state (i.e., to state 1)', or more naturally, that the program is able to run (or keep running).
-            This formula is true at states 0 and 1 but false at state 2, which can be expressed in the following notation (the 'double turnstile' $\models$ can be read as 'satisfies' or 'makes...true'):
-          </p>
-          <div class="well wffs">
-            <div>$w_0\models\Diamond(p\land\lnot{}q)$</div>
-            <div>$w_1\models\Diamond(p\land\lnot{}q)$</div>
-            <div>$w_2\not\models\Diamond(p\land\lnot{}q)$</div>
-          </div>
-          <p>
-            To see this in action, try using the app to evaluate <code>&lt;&gt;(p &amp; ~q)</code> at each state!
-          </p>
-        </div>
-        <h2>Hungry for more?</h2>
-        <p>
-          This whirlwind tour has only scratched the surface of modal logic&mdash;if you're curious to learn more, here are a few useful resources:
-        </p>
-        <ul class="unstyled">
-          <li>
-            <a href="http://www.logicinaction.org/" target="_blank">Logic in Action</a>
-            <p class="indent">A freely-available, broad-scope introduction to symbolic logic. Chapters 5-7 deal with modal logic and some of its applications.</p>
-          </li>
-          <li>
-            <a href="http://www.cs.cmu.edu/~tom7/talks/modal-logic6.swf" target="_blank">What is modal logic and what is it good for?</a>
-            <p class="indent">A lively Flash presentation aimed at computer scientists.</p>
-          </li>
-          <li>
-            <a href="http://en.wikipedia.org/wiki/Modal_logic" target="_blank">Modal Logic @ Wikipedia</a>
-            <p></p>
-          </li>
-          <li>
-            <a href="http://plato.stanford.edu/entries/logic-modal/" target="_blank">Modal Logic @ Stanford Encyclopedia of Philosophy</a>
-            <p></p>
-          </li>
+          <li><a href="https://vezwork.github.io/modallogic?model=;AqS?formula=(p-q)&(q-p)">A simple classical logic example.</a></li>
+        <li><a href="https://vezwork.github.io/modallogic?model=ApS1a,0a,;AS0a,1a,?formula=K{a}p|(K{a}(~p))">Agent $a$ doesn't know that $p$ is true or that $p$ is false.</a></li>
+        <li><a href="https://vezwork.github.io/modallogic?model=;ApS2b,3a,1b,1a,;AS1b,2a,2b,;ApqS1a,3a,3b,?formula=[p&~K{b}p](p&~K{b}p)">Announcing the formula $p \land \lnot K_b p$ makes it false! (strange)</a></li>
         </ul>
       </section>
-      <footer>
-        Epistemic Logic Playground is built ontop of the Modal Logic Playground by <a href="https://github.com/rkirsling">Ross Kirsling</a>, and modified by <a href="https://elliot.website">Elliot Evans</a>. It is released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>.
-      </footer>
-    </div>
-    <div class="modal-backdrop fade inactive" onclick="hideLinkDialog()"></div>
-    <div id="link-dialog" class="modal fade inactive">
-      <div class="modal-header">
-        <button type="button" class="close" onclick="hideLinkDialog()">&times;</button>
-        <h3>Link to Model</h3>
-      </div>
-      <div class="modal-body">
-        <p>Copy the following URL to save your model for later or to share it with others:</p>
-        <input type="text" value="" readonly onclick="this.select()">
-      </div>-->
+      <section class="text-section">
+        <h2>What is (Epistemic) Logic?</h2>
+        Epistemic Logic is way of formally reasoning about knowledge.
+        In order to understand how Epistemic logic works, let's start with classical logic and build
+        up from there.
+        <h3>Classical Logic and Formulas</h3>
+        <p>
+        In classical logic we start with propositional variables, our propositional
+        variables are $p$, $q$, $r$, $s$, and $t$. Each propositional variable can either be
+        true or false. For example we can say $p$ is false, written as $\lnot p$, and let's say
+        $q$ is true, written just as $q$.
+        </p>
+        <svg viewbox="-50 -20 100 50" height="80" style="margin: 0 auto; display: block;">
+          <g><circle class="node" r="15" style="fill: rgb(44, 170, 255); stroke-width: 3px; stroke: black;"></circle><text x="0" y="4" class="id" fill="white">0</text><text x="18" y="4" class="shadow">¬p, q</text><text x="18" y="4">¬p, q</text></g>
+        </svg>
+        <p>
+        Alongside propositional variables, we have the classical logical connectives:
+        <ul>
+          <li>$\lnot A$ (not) which is true when $A$ is false,</li>
+          <li>$A \land B$ (and) which is true when both $A$ and $B$ are false,</li>
+          <li>$A \lor B$ (or) which is true when $A$ is true or $B$ is true, or their both true,</li>
+          <li>and $A \rightarrow B$ (conditional) which is true if $B$ is true whenever $A$ is true.</li>
+        </ul>
+        Where $A$ and $B$ can be propositional variables or sub-formulas.
+        We can apply the logical connectives, along with parantheses,
+        to propositional variables to build up complex formulas. For example
+        <a href="https://vezwork.github.io/modallogic?model=;AqS?formula=(p-q)&(q-p)">$(p \rightarrow q) \land (q \rightarrow p)$ is a formula</a> which is true when $p = q$,
+        or $p \lor \lnot p$ which is a formula that is always true!
+        <div class="alert alert-primary mt-3">
+          pro tip: $(p \rightarrow q) \land (q \rightarrow p)$ can
+          be written shorthand as <code>(p &lt;-&gt; q)</code> in the playground.
+        </div>
+        </p>
+        <h3>Worlds, Agents, and Epistemic Logic</h3>
+        <p>
+        In Epistemic Logic, which is designed for reasoning about the knowledge of someone (we call that someone an agent),
+        we might imagine that that agent does not know whether they are in one situation where a
+        propositional variable $p$ is true, or a situation where it is not true, $\lnot p$.
+        We express situations as worlds.
+        We express an agent's knowledge by drawing relations (arrows) between worlds.
+        </p>
+        <p>
+        Here's how we would express a situation where an agent called $a$ doesn't know if they are in
+        a situation where $p$, or a situation where $\lnot p$:
+        <svg viewbox="290 200 100 100" width="300" height="100" style="display: block; margin: 0 auto;">
+          <defs><marker id="mid-arrow-a" viewBox="-2 -5 10 10" refX="0" markerWidth="10" markerHeight="10" orient="0"><text class="agent-text agent-a">a</text></marker></defs>
+          <defs><marker id="end-arrow-a" viewBox="0 -5 10 10" refX="6" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,-5L10,0L0,5" class="agent-a"></path></marker></defs>
+          <defs><marker id="start-arrow-a" viewBox="0 -5 10 10" refX="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M10,-5L0,0L10,5" fill="#000" class="agent-a"></path></marker></defs>
+          <g><path class="link agent-a" d="M255.32746765464503,269.9349482346648Q287.66351853041107 269.967473900772,319.9995694061771 269.9999995668793Q352.3356202819432 270.0325252329866,384.6716711577092 270.0650508990939" style="marker-end: url(&quot;#end-arrow-a&quot;); marker-mid: url(&quot;#mid-arrow-a&quot;); marker-start: url(&quot;#start-arrow-a&quot;);"></path><path class="link agent-a" d="M234.32747827813984,269.9138251035397Q219.57956117754583 254.6638598185298,234.82747827813984 239.9138251035397Q250.07539537873384 254.6638598185298,235.32747827813984 269.9138251035397" style="marker-start: url(&quot;#start-arrow-a&quot;); marker-end: url(&quot;#end-arrow-a&quot;); marker-mid: url(&quot;#mid-arrow-a&quot;);"></path><path class="link agent-a" d="M405.6716605342144,270.08617403021896Q390.9237434336204 254.83620874520906,406.1716605342144 240.08617403021896Q421.41957763480843 254.83620874520906,406.6716605342144 270.08617403021896" style="marker-start: url(&quot;#start-arrow-a&quot;); marker-end: url(&quot;#end-arrow-a&quot;); marker-mid: url(&quot;#mid-arrow-a&quot;);"></path></g>
+          <g><g class="" transform="translate(234.32747827813984,269.9138251035397)"><circle class="node" r="15" style="fill: rgb(44, 170, 255);"></circle><text x="0" y="4" class="id" fill="white">0</text><text x="18" y="4" class="shadow">p</text><text x="18" y="4">p</text></g><g transform="translate(405.6716605342144,270.08617403021896)"><circle class="node" r="15" style="fill: rgb(255, 127, 14); stroke-width: 3px; stroke: transparent;" transform=""></circle><text x="0" y="4" class="id" fill="white">1</text><text x="18" y="4" class="shadow">¬p</text><text x="18" y="4">¬p</text></g></g>
+        </svg>
+        </p>
+        <p>
+        When you enter a formula into the playground, the formula is evaluated at each world as if that
+        world was just a classical logic by itself.
+        </p>
+        <p>
+        Epistemic logic introduces a new logical connective which takes advantage of an agent's relations
+        between worlds (the classical connectives do not):
+        <ul>
+          <li>$K_b A$ (knowledge of agent $b$) which is true at a world when $A$ is true at all worlds connected to that
+            world by $b$ arrows.</li>
+          <li>along with $K_{a,b,c} A$ which is shorthand for $K_a A\land K_b A\land K_c A$.</li>
+        </ul>
+        Now, this definition isn't intuitive in the sense that it's not obvious how $K_b A$ has
+        to do with knowledge. In order to start intuitively understanding, let's consider our previous
+        example.
+        We can write a formula for a situation to check whether an agent $a$ knows if they are in
+        a situation where $p$, or knows they are in a situation where $\lnot p$ as:
+        <div class="mt-2 mb-2" style="display: block; text-align: center;"><a href="https://vezwork.github.io/modallogic?model=ApS1a,0a,;AS0a,1a,?formula=K{a}p|(K{a}(~p))">$K_a p \lor K_a \lnot p$.</a></div>
+        Which is false at both worlds because, by definition, they are each connected to both a world
+        where $p$ is false and a world where $p$ is true.
+        <svg viewbox="290 200 100 100" width="300" height="100" style="display: block; margin: 0 auto;">
+          <defs><marker id="mid-arrow-a" viewBox="-2 -5 10 10" refX="0" markerWidth="10" markerHeight="10" orient="0"><text class="agent-text agent-a">a</text></marker></defs>
+          <defs><marker id="end-arrow-a" viewBox="0 -5 10 10" refX="6" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,-5L10,0L0,5" class="agent-a"></path></marker></defs>
+          <defs><marker id="start-arrow-a" viewBox="0 -5 10 10" refX="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M10,-5L0,0L10,5" fill="#000" class="agent-a"></path></marker></defs>
+          <g><path class="link agent-a" d="M255.32746765464503,269.9349482346648Q287.66351853041107 269.967473900772,319.9995694061771 269.9999995668793Q352.3356202819432 270.0325252329866,384.6716711577092 270.0650508990939" style="marker-end: url(&quot;#end-arrow-a&quot;); marker-mid: url(&quot;#mid-arrow-a&quot;); marker-start: url(&quot;#start-arrow-a&quot;);"></path><path class="link agent-a" d="M234.32747827813984,269.9138251035397Q219.57956117754583 254.6638598185298,234.82747827813984 239.9138251035397Q250.07539537873384 254.6638598185298,235.32747827813984 269.9138251035397" style="marker-start: url(&quot;#start-arrow-a&quot;); marker-end: url(&quot;#end-arrow-a&quot;); marker-mid: url(&quot;#mid-arrow-a&quot;);"></path><path class="link agent-a" d="M405.6716605342144,270.08617403021896Q390.9237434336204 254.83620874520906,406.1716605342144 240.08617403021896Q421.41957763480843 254.83620874520906,406.6716605342144 270.08617403021896" style="marker-start: url(&quot;#start-arrow-a&quot;); marker-end: url(&quot;#end-arrow-a&quot;); marker-mid: url(&quot;#mid-arrow-a&quot;);"></path></g>
+          <g><g class="" transform="translate(234.32747827813984,269.9138251035397)"><circle class="node" r="15" style="fill: #ff9896;"></circle><text x="0" y="4" class="id" fill="white">0</text><text x="18" y="4" class="shadow">p</text><text x="18" y="4">p</text></g><g transform="translate(405.6716605342144,270.08617403021896)"><circle class="node" r="15" style="fill: #ff9896; stroke-width: 3px; stroke: transparent;" transform=""></circle><text x="0" y="4" class="id" fill="white">1</text><text x="18" y="4" class="shadow">¬p</text><text x="18" y="4">¬p</text></g></g>
+        </svg>
+        In a sense, $a$ does not know if $p$ is true or not because they cannot distinguish between
+        the world where $p$ is true and the world where $p$ is false.
+        </p>
+        <p>
+          If you add more agents you can do cool things like reason about one agent's knowledge of
+          another agent's knowledge e.g. $K_a K_b p$, $a$ knows that $b$ knows that $p$ is true.
+        </p>
+        <p>
+          Finally, in Epistemic logic it is expected that all agent's relations between worlds are
+          equivalence relations, i.e. each agent's relation is:
+          <ul>
+            <li><b>reflexive</b>, so each world is related to itself;</li>
+            <li><b>symmetric</b>, if a world $0$ is related to a world $1$, then world $1$ is also related to world $0$;</li>
+            <li>and <b>transitive</b>, if a world $0$ is related to a world $1$, and world $1$ is related to world $2$ then
+              world $0$ has to be related to world $2$ as well.
+            </li>
+          </ul>
+        </p>
+        <h3>Dynamic Epistemic Logic - Public Announcement</h3>
+        <p>
+        Dynamic Epistemic Logic introduces announcement, a mechanism for publicly announcing facts that
+        become the knowledge of all agents. Given a formula $A$, a public announcement removes all
+        worlds where $A$ is not true.
+        </p>
+        <p>
+        Dynamic Epistemic Logic also introduces a logical connective:
+        <ul>
+          <li>$[A]B$ (public announcement of $A$) which is true at a world if $B$ is true after $A$ is announced, or if the world
+            is removed by the announcement.</li>
+        </ul>
+        Try out the announcement button and the announcement connective in the playground.
+        </p>
+      </section>
+      <section class="text-section">
+        <h2>Project Information</h2>
+        <p>
+        This project is based on the open-source <a href="http://rkirsling.github.io/modallogic/">Modal Logic Playground</a> by <a href="https://github.com/rkirsling">Ross Kirsling</a>.
+        The Epistemic Logic Playground was made by <a href="https://elliot.website">Elliot Evans</a>.
+        Special thanks to my non-classical logic instructors Richard Zach and Audrey Yap, as well
+        as my classmates who provided feedback on this project.
+        </p>
+        <p class="mb-4">
+        More resources on Epistemic Logic and this project:
+        <ul>
+          <li><a href="https://github.com/vezwork/modallogic">This project on GitHub</a></li>
+          <li><a href="https://github.com/vezwork/modallogic/issues/new">Having issues with this project or have a suggestion? Submit an issue here!</a></li>
+          <li><a href="https://plato.stanford.edu/entries/dynamic-epistemic/appendix-A-kripke.html">Kripke models for modal logic (Stanford Encyclopedia of Philosophy)</a></li>
+        </ul>
+        </p>
+      </section>
     </div>
   </body>
 

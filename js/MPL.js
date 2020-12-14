@@ -16,14 +16,16 @@ var MPL = (function (FormulaParser) {
   var variableKey = 'prop';
 
   var unaries = [
-    { symbol: '~',  key: 'neg',  precedence: 5 },
-    { symbol: '[]', key: 'nec',  precedence: 5 },
-    { symbol: '<>', key: 'poss', precedence: 5 },
-    { symbol: 'K[', key: 'kno_start', precedence: 4 }
+    { symbol: '~',  key: 'neg',  precedence: 6 },
+    { symbol: '\u25a1', key: 'nec',  precedence: 6 },
+    { symbol: '<>', key: 'poss', precedence: 6 },
+    { symbol: '[', key: 'annce_start', precedence: 5 },
+    { symbol: 'K{', key: 'kno_start', precedence: 4 }
   ];
 
   var binaries = [
-    { symbol: ']', key: 'kno_end', precedence: 4, associativity: 'right' }, // the left operand to kno_end must be kno_start
+    { symbol: ']', key: 'annce_end', precedence: 5, associativity: 'right' }, // the left operand to annce_end must be annce_start
+    { symbol: '}', key: 'kno_end', precedence: 4, associativity: 'right' }, // the left operand to kno_end must be kno_start
     { symbol: '&',   key: 'conj', precedence: 3, associativity: 'right' },
     { symbol: '|',   key: 'disj', precedence: 2, associativity: 'right' },
     { symbol: '->',  key: 'impl', precedence: 1, associativity: 'right' },
@@ -51,7 +53,7 @@ var MPL = (function (FormulaParser) {
     else if (json.neg)
       return '~' + _jsonToASCII(json.neg);
     else if (json.nec)
-      return '[]' + _jsonToASCII(json.nec);
+      return '\u25a1' + _jsonToASCII(json.nec);
     else if (json.poss)
       return '<>' + _jsonToASCII(json.poss);
     else if (json.kno_start &&
@@ -59,8 +61,15 @@ var MPL = (function (FormulaParser) {
              json.kno_start.kno_end[0].prop &&
              json.kno_start.kno_end.length === 2
     ) {
-      const agent = json.kno_start.kno_end[0].prop;
-      return 'K[' + agent + '](' + _jsonToASCII(json.kno_start.kno_end[1]) + ')';
+      const agents = json.kno_start.kno_end[0].prop.split('');
+      return 'K{' + agents.join(',') + '}' + _jsonToASCII(json.kno_start.kno_end[1]);
+    }
+    else if (json.annce_start &&
+             json.annce_start.annce_end &&
+             json.annce_start.annce_end.length === 2
+    ) {
+      const announcement = _jsonToASCII(json.annce_start.annce_end[0]);
+      return '[' + announcement + ']' + _jsonToASCII(json.annce_start.annce_end[1]);
     } else if (json.conj && json.conj.length === 2)
       return '(' + _jsonToASCII(json.conj[0]) + ' & ' + _jsonToASCII(json.conj[1]) + ')';
     else if (json.disj && json.disj.length === 2)
@@ -79,10 +88,10 @@ var MPL = (function (FormulaParser) {
    */
   function _asciiToLaTeX(ascii) {
     return ascii.replace(/~/g,      '\\lnot{}')
-                .replace(/\[\]/g,   '\\Box{}')
+                .replace(/\u25a1/g,   '\\Box{}')
                 .replace(/<>/g,     '\\Diamond{}')
-                .replace(/K\[/g,     'K_')
-                .replace(/\]/g,     '')
+                .replace(/K\{/g,     'K_{')
+                .replace(/\}/g,     '}')
                 .replace(/ & /g,    '\\land{}')
                 .replace(/ \| /g,   '\\lor{}')
                 .replace(/ <-> /g,  '\\leftrightarrow{}')
@@ -95,7 +104,7 @@ var MPL = (function (FormulaParser) {
    */
   function _asciiToUnicode(ascii) {
     return ascii.replace(/~/g,    '\u00ac')
-                .replace(/\[\]/g, '\u25a1')
+                .replace(/\u25a1/g, '\u25a1')
                 .replace(/<>/g,   '\u25ca')
                 // .replace(/K\[/g,  'K[') don't change from ascii for knowledge operator
                 // .replace(/\]/g,   ']')  don't change from ascii for knowledge operator
@@ -171,7 +180,6 @@ var MPL = (function (FormulaParser) {
 
       if (isTransitionNew) {
         successors.push({ target, agent });
-        history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
       }
     };
 
@@ -192,7 +200,6 @@ var MPL = (function (FormulaParser) {
 
       if (isTransitionFound) {
         successors.splice(index, 1);
-        history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
       }
     };
 
@@ -200,7 +207,7 @@ var MPL = (function (FormulaParser) {
      * Returns an array of successor states for a given state index and optional agent.
      */
     this.getSuccessorsOf = function (source, agent) {
-      if (!_states[source]) return undefined;
+      if (!_states[source]) return [];
 
       if (agent) {
         return _states[source].successors.filter(successor => successor.agent === agent);
@@ -219,7 +226,6 @@ var MPL = (function (FormulaParser) {
           processedAssignment[propvar] = assignment[propvar];
 
       _states.push({assignment: processedAssignment, successors: []});
-      history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
       const stateIndex = _states.length - 1;
       return stateIndex;
     };
@@ -235,7 +241,6 @@ var MPL = (function (FormulaParser) {
         if (assignment[propvar] === true) stateAssignment[propvar] = true;
         else if (assignment[propvar] === false) delete stateAssignment[propvar];
       }
-      history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
     };
 
     /**
@@ -249,7 +254,6 @@ var MPL = (function (FormulaParser) {
       _states.forEach(function (source, index) {
         if (source) self.removeTransition(index, state);
       });
-      history.pushState({}, '', location.pathname + '?model=' + this.getModelString());
     };
 
     /**
@@ -329,7 +333,7 @@ var MPL = (function (FormulaParser) {
           const indexOfA = stateString.lastIndexOf('A');
           const indexOfS = stateString.lastIndexOf('S');
           if (indexOfA === -1 || indexOfS === -1) {
-            return;
+            break;
           }
 
           const propvarsSubstring = stateString.slice(indexOfA+1, indexOfS);
@@ -434,6 +438,20 @@ var MPL = (function (FormulaParser) {
         return state1.successors.some(successor => successor.target === stateIndex2);
       }
     }
+
+    /**
+     * Returns an identical, but seperate, copy of this MPL model.
+     */
+    this.deepCopy = function() {
+      const copy = new MPL.Model();
+      copy.copied = true;
+      copy.loadFromModelString(this.getModelString());
+      return copy;
+    }
+
+    this.getRawStates = function() {
+      return _states;
+    }
   }
 
   /**
@@ -446,10 +464,22 @@ var MPL = (function (FormulaParser) {
     else if (json.neg)
       return !_truth(model, state, json.neg);
     else if (json.kno_start && json.kno_start.kno_end && json.kno_start.kno_end[0].prop) {
-      const agent = json.kno_start.kno_end[0].prop;
-      return model.getSuccessorsOf(state).every(
+      const agents = json.kno_start.kno_end[0].prop.split('');
+      return agents.every(agent => model.getSuccessorsOf(state).every(
           (succ) => succ.agent !== agent || _truth(model, succ.target, json.kno_start.kno_end[1])
-      );
+      ));
+    } else if (json.annce_start && json.annce_start.annce_end) {
+      if (_truth(model, state, json.annce_start.annce_end[0])) {
+        const postAnnouncementModel = model.deepCopy();
+        postAnnouncementModel.getRawStates().forEach((stateW, w) => {
+          if (stateW && !_truth(model, w, json.annce_start.annce_end[0])) {
+            postAnnouncementModel.removeState(w);
+          }
+        });
+        return _truth(postAnnouncementModel, state, json.annce_start.annce_end[1])
+      } else {
+        return true;
+      }
     } else if (json.conj)
       return (_truth(model, state, json.conj[0]) && _truth(model, state, json.conj[1]));
     else if (json.disj)

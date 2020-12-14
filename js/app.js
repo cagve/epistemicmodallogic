@@ -26,8 +26,9 @@ const agentButtons = d3.selectAll('#edit-pane .agent-btns button');
 const model = new MPL.Model();
 let modelString = ';AS0a,';
 
-var modelParam = window.location.search.match(/\?model=(.*)/);
-if(modelParam) modelString = modelParam[1];
+const modelParam = window.location.search.match(/\?model=(.*)/);
+if (modelParam) modelString = modelParam[1];
+const formulaParam = window.location.search.match(/\?formula=(.*)/);
 
 model.loadFromModelString(modelString);
 
@@ -38,6 +39,7 @@ var lastNodeId = -1,
 
 // --> nodes setup
 var states = model.getStates();
+const propVarsInUse = new Set();
 states.forEach(function(state) {
   if(!state) { lastNodeId++; return; }
 
@@ -45,12 +47,17 @@ states.forEach(function(state) {
       node = {id: ++lastNodeId, vals: defaultVals};
 
   for(var propvar in state) {
+    propVarsInUse.add(propvar);
     var index = propvars.indexOf(propvar);
-    if(index !== -1) node.vals[index] = true;
+    if(index !== -1) {
+      node.vals[index] = true;
+      varCount = Math.max(varCount, index+1); // set correct var count from state
+    }
   }
 
   nodes.push(node);
 });
+
 
 // --> links setup
 for (const source of nodes) {
@@ -107,8 +114,8 @@ for (const agent of epistemicAgents) {
       .attr('id', 'mid-arrow-'+agent)
       .attr('viewBox', '-2 -5 10 10')
       .attr('refX', 0)
-      .attr('markerWidth', 8)
-      .attr('markerHeight', 8)
+      .attr('markerWidth', 10)
+      .attr('markerHeight', 10)
       .attr('orient', 0)
     .append('svg:text')
       .text(agent)
@@ -120,8 +127,8 @@ for (const agent of epistemicAgents) {
   .attr('id', 'end-arrow-'+agent)
   .attr('viewBox', '0 -5 10 10')
   .attr('refX', 6)
-  .attr('markerWidth', 3)
-  .attr('markerHeight', 3)
+  .attr('markerWidth', 4)
+  .attr('markerHeight', 4)
   .attr('orient', 'auto')
   .append('svg:path')
   .attr('d', 'M0,-5L10,0L0,5')
@@ -131,8 +138,8 @@ for (const agent of epistemicAgents) {
   .attr('id', 'start-arrow-'+agent)
   .attr('viewBox', '0 -5 10 10')
   .attr('refX', 4)
-  .attr('markerWidth', 3)
-  .attr('markerHeight', 3)
+  .attr('markerWidth', 4)
+  .attr('markerHeight', 4)
   .attr('orient', 'auto')
   .append('svg:path')
   .attr('d', 'M10,-5L0,0L10,5')
@@ -162,25 +169,6 @@ function resetMouseVars() {
   mousedown_link = null;
 }
 
-// handles for 'Link to Model' dialog
-var backdrop = d3.select('.modal-backdrop'),
-    linkDialog = d3.select('#link-dialog'),
-    linkInputElem = linkDialog.select('input').node();
-
-function showLinkDialog() {
-  linkInputElem.value = 'http://rkirsling.github.com/modallogic/?model=' + model.getModelString();
-
-  backdrop.classed('inactive', false);
-  setTimeout(function() { backdrop.classed('show', true); linkDialog.classed('inactive', false); }, 0);
-  setTimeout(function() { linkDialog.classed('show', true); }, 150);
-}
-
-function hideLinkDialog() {
-  linkDialog.classed('show', false);
-  setTimeout(function() { linkDialog.classed('inactive', true); backdrop.classed('show', false); }, 150);
-  setTimeout(function() { backdrop.classed('inactive', true); }, 300);
-}
-
 // handles for dynamic content in panel
 var varCountButtons = d3.selectAll('#edit-pane .var-count button'),
     varTable = d3.select('#edit-pane table.propvars'),
@@ -190,9 +178,12 @@ var varCountButtons = d3.selectAll('#edit-pane .var-count button'),
     evalOutput = d3.select('#eval-pane .eval-output'),
     currentFormula = d3.select('#app-body .current-formula');
 
-function evaluateFormula() {
+function announceFormula() {
   // make sure a formula has been input
   var formula = evalInput.select('input').node().value;
+  formula = formula.split(',').join(''); // remove commas for parsing
+  formula = formula.split('[').join('[(');
+  formula = formula.split(']').join(')]');
   if(!formula) {
     evalOutput
       .html('<div class="alert">No formula!</div>')
@@ -224,14 +215,105 @@ function evaluateFormula() {
       };
     }
     if (propOrAgent.agent) {
-      if (!epistemicAgents.includes(propOrAgent.agent)) {
+      const agents = propOrAgent.agent.split('');
+      for (const agent of agents) {
+        if (!epistemicAgents.includes(agent)) {
+          evalOutput
+            .html(`<div class="alert">Formula contains invalid agent: <b>${agent}</b></div>`)
+            .classed('inactive', false);
+          return;
+        }
+      }
+    }
+  }
+
+  // evaluate formula at each state in model
+  var trueStates  = [],
+      falseStates = [];
+  nodes.forEach(function(node, index) {
+    var id = node.id,
+        truthVal = MPL.truth(model, id, wff);
+
+    if(truthVal) {
+      trueStates.push(id);
+    } else {
+      falseStates.push(id);
+    }
+  });
+  for (const falseStateId of falseStates) {
+    model.removeState(falseStateId);
+    const falseNode = nodes.find(node => node.id === falseStateId);
+    nodes.splice(nodes.indexOf(falseNode), 1);
+    spliceLinksForNode(falseNode);
+  }
+  onStateModified();
+  restart();
+
+  // display evaluated formula
+  currentFormula
+    .html('<strong>Announced formula:</strong><br>$' + wff.latex() + '$')
+    .classed('inactive', false);
+
+  // display truth evaluation
+  const latexFalse = falseStates.length ? '$w_{' + falseStates.join('},$ $w_{') + '}$' : '$\\varnothing$';
+  evalOutput
+    .html('<div class="alert alert-dark"><strong>Worlds removed by announcement:</strong><div><div>' + latexFalse + '</div></div></div>')
+    .classed('inactive', false);
+
+  // re-render LaTeX
+  MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentFormula.node()]);
+  MathJax.Hub.Queue(['Typeset', MathJax.Hub, evalOutput.node()]);
+}
+
+function evaluateFormula() {
+  // make sure a formula has been input
+  var formula = evalInput.select('input').node().value;
+  formula = formula.split(',').join(''); // remove commas for parsing
+  formula = formula.split('[').join('[(');
+  formula = formula.split(']').join(')]');
+  if(!formula) {
+    evalOutput
+      .html('<div class="alert">No formula!</div>')
+      .classed('inactive', false);
+    return;
+  }
+
+  // parse formula and catch bad input
+  var wff = null;
+  try {
+    wff = new MPL.Wff(formula);
+  } catch(e) {
+    console.log(e);
+    evalOutput
+      .html('<div class="alert">Invalid formula!</div>')
+      .classed('inactive', false);
+    return;
+  }
+
+  // check formula for bad vars or agents
+  const propsAndAgentsInWff = getWffAgentsAndProps(wff.json());
+  for (const propOrAgent of propsAndAgentsInWff) {
+    if (propOrAgent.prop) {
+      if (!propvars.includes(propOrAgent.prop)) {
         evalOutput
-          .html(`<div class="alert">Formula contains invalid agent: <b>${propOrAgent.agent}</b></div>`)
+          .html(`<div class="alert">Formula contains invalid propositional variable: <b>${propOrAgent.prop}</b></div>`)
           .classed('inactive', false);
         return;
       };
     }
+    if (propOrAgent.agent) {
+      const agents = propOrAgent.agent.split('');
+      for (const agent of agents) {
+        if (!epistemicAgents.includes(agent)) {
+          evalOutput
+            .html(`<div class="alert">Formula contains invalid agent: <b>${agent}</b></div>`)
+            .classed('inactive', false);
+          return;
+        }
+      }
+    }
   }
+  onStateModified();
 
   // evaluate formula at each state in model
   var trueStates  = [],
@@ -281,13 +363,21 @@ function getWffAgentsAndProps(json) {
   else if (json.poss)
     return getWffAgentsAndProps(json.poss);
   else if (json.kno_start &&
-            json.kno_start.kno_end &&
-            json.kno_start.kno_end[0].prop &&
-            json.kno_start.kno_end.length === 2
+           json.kno_start.kno_end &&
+           json.kno_start.kno_end[0].prop &&
+           json.kno_start.kno_end.length === 2
   ) {
     const agent = json.kno_start.kno_end[0].prop;
     return [{ agent }].concat(getWffAgentsAndProps(json.kno_start.kno_end[1]));
-  } else if (json.conj && json.conj.length === 2)
+  }
+  else if (json.annce_start &&
+             json.annce_start.annce_end &&
+             json.annce_start.annce_end.length === 2
+  ) {
+    const announcement = getWffAgentsAndProps(json.annce_start.annce_end[0]);
+    return announcement.concat(getWffAgentsAndProps(json.annce_start.annce_end[1]));
+  }
+  else if (json.conj && json.conj.length === 2)
     return getWffAgentsAndProps(json.conj[0]).concat(getWffAgentsAndProps(json.conj[1]));
   else if (json.disj && json.disj.length === 2)
     return getWffAgentsAndProps(json.disj[0]).concat(getWffAgentsAndProps(json.disj[1]));
@@ -304,7 +394,7 @@ function setSelectedNode(node) {
   selected_node = node;
 
   // update selected node label
-  selectedNodeLabel.html(selected_node ? '<strong>State '+selected_node.id+'</strong>' : 'No state selected');
+  selectedNodeLabel.html(selected_node ? '<strong>World '+selected_node.id+'</strong>' : 'No world selected');
 
   // update variable table
   if(selected_node) {
@@ -366,7 +456,7 @@ function setVarForSelectedNode(varnum, value) {
   var update = {};
   update[propvars[varnum]] = value;
   model.editState(selected_node.id, update);
-  onModelModified();
+  onStateModified();
 
   //update buttons
   var row = d3.select(varTableRows[0][varnum]);
@@ -383,16 +473,16 @@ function tick() {
   //TODO: change the ending position of arrows depending on the agent
   path.attr('d', function(d) {
     let angle = 0;
-    if (d.agent === 'a') angle = -1;
+    if (d.agent === 'a') angle = 0;
     if (d.agent === 'b') angle = -0.5;
-    if (d.agent === 'c') angle = 0;
-    if (d.agent === 'd') angle = 0.5;
+    if (d.agent === 'c') angle = 0.5;
+    if (d.agent === 'd') angle = -1;
     if (d.agent === 'e') angle = 1;
 
     if (d.source === d.target) {
       let selfLoopOffset = [1, 0];
       selfLoopOffset = rotateByAngle(selfLoopOffset, -angle);
-      return getDoubleCurvedSVGPath([d.source.x, d.source.y], [d.source.x+selfLoopOffset[0], d.source.y+selfLoopOffset[1]], 40);
+      return getDoubleCurvedSVGPath([d.source.x, d.source.y], [d.source.x+selfLoopOffset[0], d.source.y+selfLoopOffset[1]], 30);
     }
 
     const facing = normalize([
@@ -409,10 +499,10 @@ function tick() {
         targetY = d.target.y + (targetPadding * targetNorm[1]);
 
     let mul = 0;
-    if (d.agent === 'a') mul = -40;
+    if (d.agent === 'a') mul = 0;
     if (d.agent === 'b') mul = -20;
-    if (d.agent === 'c') mul = 0;
-    if (d.agent === 'd') mul = 20;
+    if (d.agent === 'c') mul = 20;
+    if (d.agent === 'd') mul = -40;
     if (d.agent === 'e') mul = 40;
 
     return getDoubleCurvedSVGPath([sourceX, sourceY], [targetX, targetY], mul);
@@ -509,7 +599,9 @@ function restart() {
 
   // update existing nodes (reflexive & selected visual states)
   circle.selectAll('circle')
-    .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
+    .style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
+    .style('stroke-width', '3px')
+    .style('stroke', d => (d === selected_node) ? 'black': 'transparent');
 
   // add new nodes
   var g = circle.enter().append('svg:g');
@@ -517,8 +609,9 @@ function restart() {
   g.append('svg:circle')
     .attr('class', 'node')
     .attr('r', 15)
-    .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
-    .style('stroke', function(d) { return d3.rgb(colors(d.id)).darker().toString(); })
+    .style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
+    .style('stroke-width', '3px')
+    .style('stroke', d => (d === selected_node) ? 'black': 'transparent')
     .on('mouseover', function(d) {
       if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
       // enlarge target node
@@ -573,7 +666,7 @@ function restart() {
 
       // add transition to model
       model.addTransition(mousedown_node.id, mouseup_node.id, currentEpistemicAgent);
-      onModelModified();
+      onStateModified();
 
       // add link to graph (update if exists)
       // note: links are strictly source < target; arrows separately specified by booleans
@@ -634,30 +727,43 @@ function restart() {
   force.start();
 }
 
-function onModelModified() {
+// Set the reflexive, symmetric, and transitive checkboxes to the correct state whenever the model
+// changes. Also update the URL with the shareable model and formula state.
+function onStateModified() {
+  const modelString = '?model=' + model.getModelString();
+  let formulaString = '?formula=' + evalInput.select('input').node().value;
+  formulaString = formulaString.split(' ').join(''); //remove spaces
+  formulaString = formulaString.split('>').join(''); //remove > (> doesn't work in URLs)
+  history.pushState({}, '', location.pathname + modelString + formulaString);
+
   const reflexiveCheckEl = document.getElementById('reflexive-check');
   const symmetricCheckEl = document.getElementById('symmetric-check');
   const transitiveCheckEl = document.getElementById('transitive-check');
 
-  let reflexiveForActiveAgents = true;
-  let symmetricForActiveAgents = true;
-  let transitiveForActiveAgents = true;
-
   const activeAgents = model.getActiveAgents();
-  for (const agent of activeAgents) {
-    reflexiveForActiveAgents = reflexiveForActiveAgents && model.isReflexive(agent);
-    symmetricForActiveAgents = symmetricForActiveAgents && model.isSymmetric(agent);
-    transitiveForActiveAgents = transitiveForActiveAgents && model.isTransitive(agent);
+  if (activeAgents.length === 0) {
+    reflexiveCheckEl.checked = false;
+    symmetricCheckEl.checked = false;
+    transitiveCheckEl.checked = false;
+    document.getElementById('checks-title').innerHTML =
+    `No agents in use!`;
+  } else {
+    let reflexiveForActiveAgents = true;
+    let symmetricForActiveAgents = true;
+    let transitiveForActiveAgents = true;
+    for (const agent of activeAgents) {
+      reflexiveForActiveAgents = reflexiveForActiveAgents && model.isReflexive(agent);
+      symmetricForActiveAgents = symmetricForActiveAgents && model.isSymmetric(agent);
+      transitiveForActiveAgents = transitiveForActiveAgents && model.isTransitive(agent);
+    }
+    reflexiveCheckEl.checked = reflexiveForActiveAgents;
+    symmetricCheckEl.checked = symmetricForActiveAgents;
+    transitiveCheckEl.checked = transitiveForActiveAgents;
+    document.getElementById('checks-title').innerHTML =
+    `For agent${activeAgents.length === 1 ? '' : 's'} ${activeAgents.join()} :`;
   }
-
-  reflexiveCheckEl.checked = reflexiveForActiveAgents;
-  symmetricCheckEl.checked = symmetricForActiveAgents;
-  transitiveCheckEl.checked = transitiveForActiveAgents;
-
-  document.getElementById('checks-title').innerHTML =
-    `For active agent${activeAgents.length === 1 ? '' : 's'} ${activeAgents.join()} :`;
 }
-onModelModified();
+onStateModified();
 
 function mousedown() {
   // prevent I-bar on drag
@@ -675,10 +781,11 @@ function mousedown() {
   node.x = point[0];
   node.y = point[1];
   nodes.push(node);
+  setSelectedNode(node);
 
   // add state to model
   model.addState();
-  onModelModified();
+  onStateModified();
 
   restart();
 }
@@ -752,7 +859,7 @@ function removeLinkFromModel(link) {
 
   // remove rightward transition
   if(link.right) model.removeTransition(sourceId, targetId, agent);
-  onModelModified();
+  onStateModified();
 }
 
 function spliceLinksForNode(node) {
@@ -792,7 +899,7 @@ function keydown() {
         removeLinkFromModel(selected_link);
         links.splice(links.indexOf(selected_link), 1);
       }
-      onModelModified();
+      onStateModified();
       selected_link = null;
       setSelectedNode(null);
       restart();
@@ -812,7 +919,7 @@ function keydown() {
           model.addTransition(sourceId, targetId, agent);
         }
       }
-      onModelModified();
+      onStateModified();
       restart();
       break;
     case 76: // L
@@ -830,7 +937,7 @@ function keydown() {
           model.removeTransition(sourceId, targetId, agent);
         }
       }
-      onModelModified();
+      onStateModified();
       restart();
       break;
     case 82: // R
@@ -859,7 +966,7 @@ function keydown() {
           model.addTransition(sourceId, targetId, agent);
         }
       }
-      onModelModified();
+      onStateModified();
       restart();
       break;
   }
@@ -961,3 +1068,13 @@ evalInput.select('input')
 
 // app starts here
 setAppMode(MODE.EDIT);
+
+setVarCount(varCount);
+
+if (formulaParam && formulaParam[1].length > 0) {
+  let formulaValue = formulaParam[1];
+  formulaValue = formulaValue.split('-').join('->');
+  evalInput.select('input').node().value = formulaValue;
+  setAppMode(MODE.EVAL);
+  evaluateFormula();
+}
