@@ -7,7 +7,7 @@
  * Copyright (c) 2013-2015 Ross Kirsling
  * Released under the MIT License.
  */
-const FormulaParser = require('../lib/formula-parser.min.js');
+// const FormulaParser = require('../lib/formula-parser.min.js');
 var MPL = (function (FormulaParser) {
   'use strict';
 
@@ -185,13 +185,13 @@ var MPL = (function (FormulaParser) {
   * TODO: AUTOMATICAMENTE RENOMBRA LOS MUNDOS A PARTIR DE 0,1,2,3,4
   */
 	this.fromJSON = function (jsonString) {
+		this.removeAllStatesAndTransitions();
 		let jsonData =  JSON.parse(jsonString)
 		jsonData.states.forEach(state => { //Adding worlds
 			this.addState(state.assignment)
 		})
 		jsonData.states.forEach(state => {//Addings relations
 			state.successors.forEach(succ => {
-				console.log(`Adding transition (${state.id},${succ.target},${succ.agent})`)
 				this.addTransition(state.id, succ.target, succ.agent)
 			})
 		})
@@ -545,4 +545,4 @@ var MPL = (function (FormulaParser) {
 })(FormulaParser);
 
 
-module.exports = MPL; // [TEST]
+// module.exports = MPL; // [TEST]

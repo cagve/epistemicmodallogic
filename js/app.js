@@ -9,8 +9,9 @@
 
 // app mode constants
 var MODE = {
-      EDIT: 0,
-      EVAL: 1
+	EDIT: 0,
+	EVAL: 1,
+	TEXT: 2
     },
     appMode = MODE.EDIT;
 
@@ -196,7 +197,6 @@ function announceFormula() {
   try {
     wff = new MPL.Wff(formula);
   } catch(e) {
-    console.log(e);
     evalOutput
       .html('<div class="alert">Invalid formula!</div>')
       .classed('inactive', false);
@@ -283,7 +283,6 @@ function evaluateFormula() {
   try {
     wff = new MPL.Wff(formula);
   } catch(e) {
-    console.log(e);
     evalOutput
       .html('<div class="alert">Invalid formula!</div>')
       .classed('inactive', false);
@@ -990,6 +989,26 @@ function keyup() {
 var modeButtons = d3.selectAll('#mode-select button'),
     panes = d3.selectAll('#app-body .panel .tab-pane');
 
+// Función que actualza el modelo en base a un json. Para ello crea una url nueva. IMP> No mantiene la información de la fórmula.
+function updateModel(){
+	let json = document.getElementById("jsonModel").value
+	let new_model = new MPL.Model()
+    new_model.fromJSON(json);
+	let modelString = new_model.getModelString();
+	let currentUrl = window.location.href;
+	const modelRegex = /([&?]model=)[^&]*/;
+	let newUrl;
+	if (modelRegex.test(currentUrl)) {
+		newUrl = currentUrl.replace(modelRegex, `$1${modelString}?`);
+	} else {
+		const separator = currentUrl.includes('?') ? '&' : '?';
+		newUrl = `${currentUrl}${separator}model=${modelString}?`;
+	}
+	window.history.replaceState({}, '', newUrl);
+}
+
+
+
 function setAppMode(newMode) {
   // mode-specific settings
   if(newMode === MODE.EDIT) {
@@ -1008,7 +1027,7 @@ function setAppMode(newMode) {
       .classed('true', false)
       .classed('false', false);
     currentFormula.classed('inactive', true);
-  } else if(newMode === MODE.EVAL) {
+  } else if(newMode === MODE.EVAL || newMode === MODE.TEXT) {
     // disable listeners (except for I-bar prevention)
     svg.classed('edit', false)
       .on('mousedown', function() { d3.event.preventDefault(); })
@@ -1047,8 +1066,8 @@ function setAppMode(newMode) {
     else d3.select(this).classed('active', true);
   });
   panes.each(function(d,i) {
-    if(i !== newMode) d3.select(this).classed('active', false);
-    else d3.select(this).classed('active', true);
+	  if(i !== newMode) d3.select(this).classed('active', false);
+	  else d3.select(this).classed('active', true);
   });
   appMode = newMode;
 
@@ -1068,7 +1087,6 @@ evalInput.select('input')
 
 // app starts here
 setAppMode(MODE.EDIT);
-
 setVarCount(varCount);
 
 if (formulaParam && formulaParam[1].length > 0) {

@@ -19,6 +19,9 @@
           <button class="btn btn-primary" onclick="setAppMode(MODE.EVAL)">
             <i class="icon-eye-open icon-white"></i> Evaluate Formula
           </button>
+          <button class="btn btn-primary" onclick="setAppMode(MODE.TEXT)">
+            <i class="icon-eye-open icon-white"></i> Text mode
+          </button>
         </div>
         <div id="app-body">
           <div class="panel tab-content">
@@ -97,6 +100,10 @@
                 </ul>
               </div>
             </div>
+            <div id="text-pane" class="tab-pane">
+				<textarea name="textarea" id="jsonModel" rows="10" cols="25">Write the model</textarea>
+				<button onclick="updateModel()">Update Model</button>
+			</div>
           </div>
           <div style="position: absolute; bottom: 10px; left: 310px; z-index: 10;">
             <i style="color: gray;" id="checks-title">loading...</i><br>
