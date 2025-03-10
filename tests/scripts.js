@@ -55,5 +55,4 @@ const model = new MPL.Model
 model.fromJSON(jsonString)
 console.log(model.getModelString())
 console.log("---")
-model.groupClosure(['a','b'])
-console.log(model.getModelString())
+console.log(model.getGroupSuccessorOf(0,['a','b']))

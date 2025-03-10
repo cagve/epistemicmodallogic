@@ -361,13 +361,21 @@ function getWffAgentsAndProps(json) {
     return getWffAgentsAndProps(json.nec);
   else if (json.poss)
     return getWffAgentsAndProps(json.poss);
-  else if (json.kno_start &&
-           json.kno_start.kno_end &&
-           json.kno_start.kno_end[0].prop &&
-           json.kno_start.kno_end.length === 2
+  else if (json.common_start &&
+           json.common_start.group_end &&
+           json.common_start.group_end[0].prop &&
+           json.common_start.group_end.length === 2
   ) {
-    const agent = json.kno_start.kno_end[0].prop;
-    return [{ agent }].concat(getWffAgentsAndProps(json.kno_start.kno_end[1]));
+    const agent = json.common_start.group_end[0].prop;
+    return [{ agent }].concat(getWffAgentsAndProps(json.common_start.group_end[1]));
+  }
+  else if (json.kno_start &&
+           json.kno_start.group_end &&
+           json.kno_start.group_end[0].prop &&
+           json.kno_start.group_end.length === 2
+  ) {
+    const agent = json.kno_start.group_end[0].prop;
+    return [{ agent }].concat(getWffAgentsAndProps(json.kno_start.group_end[1]));
   }
   else if (json.annce_start &&
              json.annce_start.annce_end &&

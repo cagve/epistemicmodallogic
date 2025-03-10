@@ -7,7 +7,7 @@
  * Copyright (c) 2013-2015 Ross Kirsling
  * Released under the MIT License.
  */
-const FormulaParser = require('../lib/formula-parser.min.js');
+// const FormulaParser = require('../lib/formula-parser.min.js'); //[TEST]
 var MPL = (function (FormulaParser) {
   'use strict';
 
@@ -537,9 +537,16 @@ var MPL = (function (FormulaParser) {
 		let matrix = this.groupMatrix(allRelations)
 		let transRelation = this.matrixToRelation(matrix)
 
-		transRelation.forEach( relation => {this.addTransition(relation.source, relation.target, relation.agent)});
-
+		let modelprima = new Model();
+		_states.forEach(state => modelprima.addState())
+		transRelation.forEach( relation => {modelprima.addTransition(relation.source, relation.target, null)});
+		return modelprima
 	}	
+
+    this.getGroupSuccessorOf = function(state, agents) {
+		let groupModel = this.groupClosure(agents)
+		return groupModel.getSuccessorsOf(state)
+	}
     /**
      * Returns an identical, but seperate, copy of this MPL model.
      */
@@ -564,6 +571,12 @@ var MPL = (function (FormulaParser) {
       return model.valuation(json.prop, state);
     else if (json.neg)
       return !_truth(model, state, json.neg);
+    else if (json.common_start && json.common_start.group_end && json.common_start.group_end[0].prop) {
+		const agents = json.common_start.group_end[0].prop.split('');
+		let modelprima = model.groupClosure(agents)
+		let succs = modelprima.getGroupSuccessorOf(state,agents) //Computa cada vez lo transitivo optimizar TODO
+		return succs.every( succ => _truth(model, succ.target, json.common_start.group_end[1]));
+	}
     else if (json.kno_start && json.kno_start.group_end && json.kno_start.group_end[0].prop) {
       const agents = json.kno_start.group_end[0].prop.split('');
       return agents.every(agent => model.getSuccessorsOf(state).every(
@@ -618,4 +631,4 @@ var MPL = (function (FormulaParser) {
 })(FormulaParser);
 
 
-module.exports = MPL; // [TEST]
+// module.exports = MPL; // [TEST]
