@@ -53,9 +53,7 @@ var jsonString =`{
 
 const model = new MPL.Model
 model.fromJSON(jsonString)
-let relations = model.getGroupSuccessor(['b','a'])
-console.log(relations)
+console.log(model.getModelString())
 console.log("---")
-let matrix  = model.transivityClosure(relations)
-let rel = model.matrixToRelation(matrix)
-console.log(rel)
+model.groupClosure(['a','b'])
+console.log(model.getModelString())

@@ -495,22 +495,25 @@ var MPL = (function (FormulaParser) {
 		return groupSucc;
 	}
 
-  this.transivityClosure = function (relations){ //Esto genera extras. pero no debería haber ningun problema
-	  let n = this.getStates().length; 
-	  let matrix = Array.from({ length: n }, () => Array(n).fill(0));
-	  relations.forEach(rel => {
-		  matrix[rel.source][rel.target] = 1;
-	  });
+	  
+	  // group matrix = cierre transitivo + reflexivo
+	  this.groupMatrix = function (relations){ 
+		  let n = this.getStates().length; 
+		  let matrix = Array.from({ length: n }, () => Array(n).fill(0));
+		  relations.forEach(rel => {
+			  matrix[rel.source][rel.target] = 1;
+		  });
 
-	  for (let k = 0; k < n; k++) {
-		  for (let i = 0; i < n; i++) {
-			  for (let j = 0; j < n; j++) {
-				  matrix[i][j] = matrix[i][j] || (matrix[i][k] && matrix[k][j]);
+		  for (let k = 0; k < n; k++) {
+			  for (let i = 0; i < n; i++) {
+				  for (let j = 0; j < n; j++) {
+					  matrix[i][j] = matrix[i][j] || (matrix[i][k] && matrix[k][j]); 
+					  matrix[i][i] = 1;
+				  }
 			  }
 		  }
+		  return matrix;
 	  }
-	  return matrix;
-  }
 
 	  //TODO: Utils method
 	  this.matrixToRelation = function (matrix) {
@@ -526,6 +529,17 @@ var MPL = (function (FormulaParser) {
 		  return relations
 	  }
 
+	this.groupClosure = function (agents) {
+		// obtenemos todos las relaciones del grupo.
+		let allRelations = this.getGroupSuccessor(agents)
+
+		// Aplicamos cierre transitivo+reflexio
+		let matrix = this.groupMatrix(allRelations)
+		let transRelation = this.matrixToRelation(matrix)
+
+		transRelation.forEach( relation => {this.addTransition(relation.source, relation.target, relation.agent)});
+
+	}	
     /**
      * Returns an identical, but seperate, copy of this MPL model.
      */
