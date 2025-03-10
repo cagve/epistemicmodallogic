@@ -7,7 +7,7 @@
  * Copyright (c) 2013-2015 Ross Kirsling
  * Released under the MIT License.
  */
-// const FormulaParser = require('../lib/formula-parser.min.js');
+const FormulaParser = require('../lib/formula-parser.min.js');
 var MPL = (function (FormulaParser) {
   'use strict';
 
@@ -467,6 +467,65 @@ var MPL = (function (FormulaParser) {
       }
     }
 
+	this.getSuccessorOfAgent = function(agent){
+		let allAccRel = []
+		_states.forEach((state, index) => {
+			state.successors.forEach(successor => {
+				if (agent == successor.agent){
+					let relation = {
+						source: index,
+						target: successor.target,
+						agent: successor.agent
+
+					}
+					allAccRel.push(relation)
+				}
+			});
+		});
+		return allAccRel;
+	}
+
+	  // Devuelve el conjunto de relaciones para un array de agentes.
+	this.getGroupSuccessor = function (agents){
+		let groupSucc = [];
+		agents.forEach ((agent) => {
+			let succ = this.getSuccessorOfAgent(agent);
+			groupSucc.push(...succ);
+		});
+		return groupSucc;
+	}
+
+  this.transivityClosure = function (relations){ //Esto genera extras. pero no debería haber ningun problema
+	  let n = this.getStates().length; 
+	  let matrix = Array.from({ length: n }, () => Array(n).fill(0));
+	  relations.forEach(rel => {
+		  matrix[rel.source][rel.target] = 1;
+	  });
+
+	  for (let k = 0; k < n; k++) {
+		  for (let i = 0; i < n; i++) {
+			  for (let j = 0; j < n; j++) {
+				  matrix[i][j] = matrix[i][j] || (matrix[i][k] && matrix[k][j]);
+			  }
+		  }
+	  }
+	  return matrix;
+  }
+
+	  //TODO: Utils method
+	  this.matrixToRelation = function (matrix) {
+		  let relations = []
+		  let agent = 'c'
+		  for (let i = 0; i < matrix.length; i++) {
+			  for (let j = 0; j < matrix[i].length; j++) {
+				  if (matrix[i][j] === 1) {
+					  relations.push({ source: i, target: j, agent: agent });
+				  }
+			  }
+		  }
+		  return relations
+	  }
+
     /**
      * Returns an identical, but seperate, copy of this MPL model.
      */
@@ -545,4 +604,4 @@ var MPL = (function (FormulaParser) {
 })(FormulaParser);
 
 
-// module.exports = MPL; // [TEST]
+module.exports = MPL; // [TEST]

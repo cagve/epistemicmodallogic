@@ -34,8 +34,17 @@ var jsonString =`{
         },
         {
           "agent": "b",
-          "target": 1
+          "target": 2
         }
+      ]
+    },
+    {
+      "id": 2,
+      "assignment": {
+        "p": false,
+        "q": true
+      },
+      "successors": [
       ]
     }
   ],
@@ -44,7 +53,9 @@ var jsonString =`{
 
 const model = new MPL.Model
 model.fromJSON(jsonString)
-
-
-console.log(model.getStates())
-console.log(model.getModelString())
+let relations = model.getGroupSuccessor(['b','a'])
+console.log(relations)
+console.log("---")
+let matrix  = model.transivityClosure(relations)
+let rel = model.matrixToRelation(matrix)
+console.log(rel)
