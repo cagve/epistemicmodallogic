@@ -27,7 +27,7 @@ var MPL = (function (FormulaParser) {
 
   var binaries = [
 	  { symbol: ']', key: 'annce_end', precedence: 5, associativity: 'right' }, // the left operand to annce_end must be annce_start
-	  { symbol: '}', key: 'kno_end', precedence: 4, associativity: 'right' }, // the left operand to kno_end must be kno_start
+	  { symbol: '}', key: 'group_end', precedence: 4, associativity: 'right' }, // the left operand to kno_end must be kno_start
 	  { symbol: '&',   key: 'conj', precedence: 3, associativity: 'right' },
 	  { symbol: '|',   key: 'disj', precedence: 2, associativity: 'right' },
 	  { symbol: '->',  key: 'impl', precedence: 1, associativity: 'right' },
@@ -59,20 +59,20 @@ var MPL = (function (FormulaParser) {
     else if (json.poss)
       return '<>' + _jsonToASCII(json.poss);
     else if (json.kno_start &&
-             json.kno_start.kno_end &&
-             json.kno_start.kno_end[0].prop &&
-             json.kno_start.kno_end.length === 2
+             json.kno_start.group_end &&
+             json.kno_start.group_end[0].prop &&
+             json.kno_start.group_end.length === 2
     ) {
-      const agents = json.kno_start.kno_end[0].prop.split('');
-      return 'K{' + agents.join(',') + '}' + _jsonToASCII(json.kno_start.kno_end[1]);
+      const agents = json.kno_start.group_end[0].prop.split('');
+      return 'K{' + agents.join(',') + '}' + _jsonToASCII(json.kno_start.group_end[1]);
 	}
 	  else if (json.common_start && // [CA] common knowledge
-		  json.common_start.kno_end && //[CA] NOTE THAT common end is equal to kno_end. 
-		  json.common_start.kno_end[0].prop && //TODO: change name kno_end to general one.
-		  json.common_start.kno_end.length === 2
+		  json.common_start.group_end && //[CA] NOTE THAT common end is equal to kno_end. 
+		  json.common_start.group_end[0].prop && //TODO: change name kno_end to general one.
+		  json.common_start.group_end.length === 2
 	  ) {
-		  const agents = json.common_start.kno_end[0].prop.split('');
-		  return 'C{' + agents.join(',') + '}' + _jsonToASCII(json.common_start.kno_end[1]);
+		  const agents = json.common_start.group_end[0].prop.split('');
+		  return 'C{' + agents.join(',') + '}' + _jsonToASCII(json.common_start.group_end[1]);
 	  }
     else if (json.annce_start &&
              json.annce_start.annce_end &&
@@ -179,6 +179,22 @@ var MPL = (function (FormulaParser) {
     // ex: [{assignment: {},          successors: [{target: 0, agent: 'a'}, {target: 1, agent: 'a'}]},
     //      {assignment: {'p': true}, successors: []   }]
     var _states = [];
+
+  /**
+  * [CA] Create a model from json.
+  * TODO: AUTOMATICAMENTE RENOMBRA LOS MUNDOS A PARTIR DE 0,1,2,3,4
+  */
+	this.fromJSON = function (jsonString) {
+		let jsonData =  JSON.parse(jsonString)
+		jsonData.states.forEach(state => {
+			this.addState(state.assignment)
+			state.successors.forEach(succ => {
+				console.log(`Adding transition (${state.id},${succ.target},${succ.agent})`)
+				this.addTransition(state.id, succ.target, succ.agent)
+			})
+		})
+	}
+
 
     /**
      * Adds a transition to the model, given source and target state indices.
@@ -474,10 +490,10 @@ var MPL = (function (FormulaParser) {
       return model.valuation(json.prop, state);
     else if (json.neg)
       return !_truth(model, state, json.neg);
-    else if (json.kno_start && json.kno_start.kno_end && json.kno_start.kno_end[0].prop) {
-      const agents = json.kno_start.kno_end[0].prop.split('');
+    else if (json.kno_start && json.kno_start.group_end && json.kno_start.group_end[0].prop) {
+      const agents = json.kno_start.group_end[0].prop.split('');
       return agents.every(agent => model.getSuccessorsOf(state).every(
-          (succ) => succ.agent !== agent || _truth(model, succ.target, json.kno_start.kno_end[1])
+          (succ) => succ.agent !== agent || _truth(model, succ.target, json.kno_start.group_end[1])
       ));
     } else if (json.annce_start && json.annce_start.annce_end) {
       if (_truth(model, state, json.annce_start.annce_end[0])) {

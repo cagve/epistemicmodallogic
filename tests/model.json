@@ -1,14 +1,10 @@
-// ESTE ARCHIVO SIRVE COMO SCRATCH PARA ALGUNAS FUNCIONES
-var fs = require("fs");
-const MPL = require('../js/MPL.js');
-
-var jsonString =`{
+{
   "states": [
     {
       "id": 0,
       "assignment": {
         "p": true,
-        "q": true
+        "q": false
       },
       "successors": [
         {
@@ -40,10 +36,4 @@ var jsonString =`{
     }
   ],
   "agents": ["a", "b"]
-}`
-
-const model = new MPL.Model
-model.fromJSON(jsonString)
-
-console.log(model.getStates())
-console.log(model.getModelString())
+}
