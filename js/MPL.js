@@ -17,20 +17,21 @@ var MPL = (function (FormulaParser) {
   var variableKey = 'prop';
 
   var unaries = [
-    { symbol: '~',  key: 'neg',  precedence: 6 },
-    { symbol: '\u25a1', key: 'nec',  precedence: 6 },
-    { symbol: '<>', key: 'poss', precedence: 6 },
-    { symbol: '[', key: 'annce_start', precedence: 5 },
-    { symbol: 'K{', key: 'kno_start', precedence: 4 }
+	  { symbol: '~',  key: 'neg',  precedence: 6 },
+	  { symbol: '\u25a1', key: 'nec',  precedence: 6 },
+	  { symbol: '<>', key: 'poss', precedence: 6 },
+	  { symbol: '[', key: 'annce_start', precedence: 5 },
+	  { symbol: 'K{', key: 'kno_start', precedence: 4 },
+	  { symbol: 'C{', key: 'common_start', precedence: 4 } // [CA] Common knowledge operator
   ];
 
   var binaries = [
-    { symbol: ']', key: 'annce_end', precedence: 5, associativity: 'right' }, // the left operand to annce_end must be annce_start
-    { symbol: '}', key: 'kno_end', precedence: 4, associativity: 'right' }, // the left operand to kno_end must be kno_start
-    { symbol: '&',   key: 'conj', precedence: 3, associativity: 'right' },
-    { symbol: '|',   key: 'disj', precedence: 2, associativity: 'right' },
-    { symbol: '->',  key: 'impl', precedence: 1, associativity: 'right' },
-    { symbol: '<->', key: 'equi', precedence: 0, associativity: 'right' }
+	  { symbol: ']', key: 'annce_end', precedence: 5, associativity: 'right' }, // the left operand to annce_end must be annce_start
+	  { symbol: '}', key: 'kno_end', precedence: 4, associativity: 'right' }, // the left operand to kno_end must be kno_start
+	  { symbol: '&',   key: 'conj', precedence: 3, associativity: 'right' },
+	  { symbol: '|',   key: 'disj', precedence: 2, associativity: 'right' },
+	  { symbol: '->',  key: 'impl', precedence: 1, associativity: 'right' },
+	  { symbol: '<->', key: 'equi', precedence: 0, associativity: 'right' }
   ];
 
   var MPLParser = new FormulaParser(variableKey, unaries, binaries);
@@ -64,7 +65,15 @@ var MPL = (function (FormulaParser) {
     ) {
       const agents = json.kno_start.kno_end[0].prop.split('');
       return 'K{' + agents.join(',') + '}' + _jsonToASCII(json.kno_start.kno_end[1]);
-    }
+	}
+	  else if (json.common_start && // [CA] common knowledge
+		  json.common_start.kno_end && //[CA] NOTE THAT common end is equal to kno_end. 
+		  json.common_start.kno_end[0].prop && //TODO: change name kno_end to general one.
+		  json.common_start.kno_end.length === 2
+	  ) {
+		  const agents = json.common_start.kno_end[0].prop.split('');
+		  return 'C{' + agents.join(',') + '}' + _jsonToASCII(json.common_start.kno_end[1]);
+	  }
     else if (json.annce_start &&
              json.annce_start.annce_end &&
              json.annce_start.annce_end.length === 2
@@ -88,15 +97,16 @@ var MPL = (function (FormulaParser) {
    * @private
    */
   function _asciiToLaTeX(ascii) {
-    return ascii.replace(/~/g,      '\\lnot{}')
-                .replace(/\u25a1/g,   '\\Box{}')
-                .replace(/<>/g,     '\\Diamond{}')
-                .replace(/K\{/g,     'K_{')
-                .replace(/\}/g,     '}')
-                .replace(/ & /g,    '\\land{}')
-                .replace(/ \| /g,   '\\lor{}')
-                .replace(/ <-> /g,  '\\leftrightarrow{}')
-                .replace(/ -> /g,   '\\rightarrow{}');
+	  return ascii.replace(/~/g,      '\\lnot{}')
+		  .replace(/\u25a1/g,   '\\Box{}')
+		  .replace(/<>/g,     '\\Diamond{}')
+		  .replace(/K\{/g,     'K_{')
+		  .replace(/\}/g,     '}')
+		  .replace(/ & /g,    '\\land{}')
+		  .replace(/ \| /g,   '\\lor{}')
+		  .replace(/ <-> /g,  '\\leftrightarrow{}')
+		  .replace(/ -> /g,   '\\rightarrow{}')
+		  .replace(/C\{/g, 'C_{'); // [CA] Common knowledge.
   }
 
   /**
