@@ -45,5 +45,6 @@ var jsonString =`{
 const model = new MPL.Model
 model.fromJSON(jsonString)
 
+
 console.log(model.getStates())
 console.log(model.getModelString())

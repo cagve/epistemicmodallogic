@@ -186,15 +186,16 @@ var MPL = (function (FormulaParser) {
   */
 	this.fromJSON = function (jsonString) {
 		let jsonData =  JSON.parse(jsonString)
-		jsonData.states.forEach(state => {
+		jsonData.states.forEach(state => { //Adding worlds
 			this.addState(state.assignment)
+		})
+		jsonData.states.forEach(state => {//Addings relations
 			state.successors.forEach(succ => {
 				console.log(`Adding transition (${state.id},${succ.target},${succ.agent})`)
 				this.addTransition(state.id, succ.target, succ.agent)
 			})
 		})
 	}
-
 
     /**
      * Adds a transition to the model, given source and target state indices.
