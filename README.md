@@ -1,4 +1,4 @@
-Epistemic Logic Playground
+Epistemic Logic Playground(FORK for T4TL)
 ======================
 This project is based on the open-source <a href="http://rkirsling.github.io/modallogic/">Modal Logic Playground</a> by <a href="https://github.com/rkirsling">Ross Kirsling</a>.
         The Epistemic Logic Playground was made by <a href="https://elliot.website">Elliot Evans</a>.
