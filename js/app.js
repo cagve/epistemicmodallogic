@@ -33,6 +33,7 @@ const formulaParam = window.location.search.match(/\?formula=(.*)/);
 
 model.loadFromModelString(modelString);
 
+
 // set up initial nodes and links (edges) of graph, based on MPL model
 var lastNodeId = -1,
     nodes = [],
@@ -736,8 +737,8 @@ function restart() {
 
 // Set the reflexive, symmetric, and transitive checkboxes to the correct state whenever the model
 // changes. Also update the URL with the shareable model and formula state.
-function onStateModified() {
-  const modelString = '?model=' + model.getModelString();
+function onStateModified(new_model=model) {
+  const modelString = '?model=' + new_model.getModelString();
   let formulaString = '?formula=' + evalInput.select('input').node().value;
   formulaString = formulaString.split(' ').join(''); //remove spaces
   formulaString = formulaString.split('>').join(''); //remove > (> doesn't work in URLs)
@@ -747,7 +748,7 @@ function onStateModified() {
   const symmetricCheckEl = document.getElementById('symmetric-check');
   const transitiveCheckEl = document.getElementById('transitive-check');
 
-  const activeAgents = model.getActiveAgents();
+  const activeAgents = new_model.getActiveAgents();
   if (activeAgents.length === 0) {
     reflexiveCheckEl.checked = false;
     symmetricCheckEl.checked = false;
@@ -759,9 +760,9 @@ function onStateModified() {
     let symmetricForActiveAgents = true;
     let transitiveForActiveAgents = true;
     for (const agent of activeAgents) {
-      reflexiveForActiveAgents = reflexiveForActiveAgents && model.isReflexive(agent);
-      symmetricForActiveAgents = symmetricForActiveAgents && model.isSymmetric(agent);
-      transitiveForActiveAgents = transitiveForActiveAgents && model.isTransitive(agent);
+      reflexiveForActiveAgents = reflexiveForActiveAgents && new_model.isReflexive(agent);
+      symmetricForActiveAgents = symmetricForActiveAgents && new_model.isSymmetric(agent);
+      transitiveForActiveAgents = transitiveForActiveAgents && new_model.isTransitive(agent);
     }
     reflexiveCheckEl.checked = reflexiveForActiveAgents;
     symmetricCheckEl.checked = symmetricForActiveAgents;
@@ -1002,24 +1003,19 @@ function updateModel(){
 	let json = document.getElementById("jsonModel").value
 	let new_model = new MPL.Model()
     new_model.fromJSON(json);
-	let modelString = new_model.getModelString();
-	let currentUrl = window.location.href;
-	const modelRegex = /([&?]model=)[^&]*/;
-	let newUrl;
-	if (modelRegex.test(currentUrl)) {
-		newUrl = currentUrl.replace(modelRegex, `$1${modelString}?`);
-	} else {
-		const separator = currentUrl.includes('?') ? '&' : '?';
-		newUrl = `${currentUrl}${separator}model=${modelString}?`;
-	}
-	window.history.replaceState({}, '', newUrl);
+	// const modelString = '?model=' + new_model.getModelString();
+	// let formulaString = '?formula=' + evalInput.select('input').node().value;
+	// formulaString = formulaString.split(' ').join(''); //remove spaces
+	// formulaString = formulaString.split('>').join(''); //remove > (> doesn't work in URLs)
+	// history.pushState({}, '', location.pathname + modelString + formulaString);
+	onStateModified(new_model);
 }
 
 
 
 function setAppMode(newMode) {
   // mode-specific settings
-  if(newMode === MODE.EDIT) {
+  if(newMode === MODE.EDIT || newMode === MODE.TEXT) {
     // enable listeners
     svg.classed('edit', true)
       .on('mousedown', mousedown)
@@ -1035,7 +1031,7 @@ function setAppMode(newMode) {
       .classed('true', false)
       .classed('false', false);
     currentFormula.classed('inactive', true);
-  } else if(newMode === MODE.EVAL || newMode === MODE.TEXT) {
+  } else if(newMode === MODE.EVAL ) {
     // disable listeners (except for I-bar prevention)
     svg.classed('edit', false)
       .on('mousedown', function() { d3.event.preventDefault(); })
