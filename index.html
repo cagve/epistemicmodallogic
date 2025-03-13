@@ -26,6 +26,12 @@
         <div id="app-body">
           <div class="panel tab-content">
             <div id="edit-pane" class="tab-pane active">
+				<div id="upload-pane">
+					<input type="file" id="fileInput" style="display: none;">
+					<button id="readFileButton">Upload Model</button>
+					<pre id="fileContent"></pre>
+				</div>
+
               <div class="agent-btns">
                 Current agent:<br>
                 <div class="btn-group">
@@ -334,4 +340,6 @@
   <script src="lib/formula-parser.min.js"></script>
   <script src="js/MPL.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/utils.js"></script>
+
 </html>

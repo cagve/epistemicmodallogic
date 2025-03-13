@@ -520,8 +520,10 @@ function tick() {
   });
 }
 
-function updateModel() { // TODO recarga a la pagina inicial. Funciona con redireccion de url.
-	let json = document.getElementById("jsonModel").value
+function updateModel(json) { // TODO recarga a la pagina inicial. Funciona con redireccion de url.
+		if (!json){
+			json = document.getElementById("jsonModel").value
+		}
 	model.fromJSON(json);
 	const modelString = '?model=' + model.getModelString();
 	let formulaString = '?formula=' + evalInput.select('input').node().value;
