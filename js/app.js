@@ -521,66 +521,7 @@ function tick() {
 }
 
 function updateModel() {
-	let json = document.getElementById("jsonModel").value
-	model.fromJSON(json);
-	onStateModified()
-
-	lastNodeId = -1;
-	nodes = [];
-	links = [];
-
-	var states = model.getStates();
-	const propVarsInUse = new Set();
-	states.forEach(function(state) {
-		if (!state) { lastNodeId++; return; }
-
-		var defaultVals = propvars.map(function() { return false; }),
-			node = { id: ++lastNodeId, vals: defaultVals };
-
-		for (var propvar in state) {
-			propVarsInUse.add(propvar);
-			var index = propvars.indexOf(propvar);
-			if (index !== -1) {
-				node.vals[index] = true;
-				varCount = Math.max(varCount, index + 1); 
-			}
-		}
-
-		nodes.push(node);
-	});
-
-	for (const source of nodes) {
-		const sourceId = source.id;
-		for (const succ of model.getSuccessorsOf(sourceId)) {
-			const targetId = succ.target;
-			if (sourceId === targetId) {
-				links.push({ source: source, target: source, left: true, right: true, agent: succ.agent });
-				continue;
-			}
-
-			const target = nodes.filter(function(node) { return node.id === targetId; })[0];
-			const link = links.filter(l => l.source === target && l.target === source && l.agent === succ.agent)[0];
-
-			if (link) {
-				if (sourceId < targetId) {
-					link.right = true;
-				} else {
-					link.left = true;
-				}
-			} else {
-				if (sourceId < targetId) {
-					links.push({ source: source, target: target, left: false, right: true, agent: succ.agent });
-				} else {
-					links.push({ source: target, target: source, left: true, right: false, agent: succ.agent });
-				}
-			}
-		}
-	}
-
-	force.nodes(nodes);
-	force.links(links);
-	force.start();
-	restart();
+	// COMPLETE THIS
 }
 
 
@@ -666,7 +607,7 @@ function restart() {
 
 	// circle (node) group
 	// NB: the function arg is crucial here! nodes are known by id, not by index!
-		circle = circle.data(nodes, function(d) { return d.id; });
+		circle = circle.data(nodes, function(d) { return d.id+1; });
 
 	// update existing nodes (reflexive & selected visual states)
 	circle.selectAll('circle')
@@ -1067,7 +1008,7 @@ var modeButtons = d3.selectAll('#mode-select button'),
 
 function setAppMode(newMode) {
   // mode-specific settings
-  if(newMode === MODE.EDIT || newMode === MODE.TEXT) {
+  if(newMode === MODE.EDIT ) {
     // enable listeners
     svg.classed('edit', true)
       .on('mousedown', mousedown)
@@ -1083,7 +1024,7 @@ function setAppMode(newMode) {
       .classed('true', false)
       .classed('false', false);
     currentFormula.classed('inactive', true);
-  } else if(newMode === MODE.EVAL ) {
+  } else if(newMode === MODE.EVAL|| newMode === MODE.TEXT ) {
     // disable listeners (except for I-bar prevention)
     svg.classed('edit', false)
       .on('mousedown', function() { d3.event.preventDefault(); })
