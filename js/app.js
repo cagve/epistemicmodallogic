@@ -33,61 +33,60 @@ const formulaParam = window.location.search.match(/\?formula=(.*)/);
 
 model.loadFromModelString(modelString);
 
-
 // set up initial nodes and links (edges) of graph, based on MPL model
 var lastNodeId = -1,
-    nodes = [],
-    links = [];
+	nodes = [],
+	links = [];
 
 // --> nodes setup
 var states = model.getStates();
 const propVarsInUse = new Set();
 states.forEach(function(state) {
-  if(!state) { lastNodeId++; return; }
+	if(!state) { lastNodeId++; return; }
 
-  var defaultVals = propvars.map(function() { return false; }),
-      node = {id: ++lastNodeId, vals: defaultVals};
+	var defaultVals = propvars.map(function() { return false; }),
+		node = {id: ++lastNodeId, vals: defaultVals};
 
-  for(var propvar in state) {
-    propVarsInUse.add(propvar);
-    var index = propvars.indexOf(propvar);
-    if(index !== -1) {
-      node.vals[index] = true;
-      varCount = Math.max(varCount, index+1); // set correct var count from state
-    }
-  }
+	for(var propvar in state) {
+		propVarsInUse.add(propvar);
+		var index = propvars.indexOf(propvar);
+		if(index !== -1) {
+			node.vals[index] = true;
+			varCount = Math.max(varCount, index+1); // set correct var count from state
+		}
+	}
 
-  nodes.push(node);
+	nodes.push(node);
 });
 
 
 // --> links setup
 for (const source of nodes) {
-  const sourceId = source.id;
-  for (const succ of model.getSuccessorsOf(sourceId)) {
-    const targetId = succ.target;
-    if(sourceId === targetId) {
-      links.push({source: source, target: source, left: true, right: true, agent: succ.agent });
-      continue;
-    }
+	const sourceId = source.id;
+	for (const succ of model.getSuccessorsOf(sourceId)) {
+		const targetId = succ.target;
+		if(sourceId === targetId) {
+			links.push({source: source, target: source, left: true, right: true, agent: succ.agent });
+			continue;
+		}
 
-    const target = nodes.filter(function(node) { return node.id === targetId; })[0];
-    const link = links.filter(l => l.source === target && l.target === source && l.agent === succ.agent)[0];
+		const target = nodes.filter(function(node) { return node.id === targetId; })[0];
+		const link = links.filter(l => l.source === target && l.target === source && l.agent === succ.agent)[0];
 
-    if (link) {
-      if(sourceId < targetId) {
-        link.right = true;
-      } else {
-        link.left = true;
-      }
-    } else {
-      if(sourceId < targetId) {
-        links.push({source: source, target: target, left: false, right: true, agent: succ.agent });
-      } else {
-        links.push({source: target, target: source, left: true, right: false, agent: succ.agent });
-      }
-    }
-  }
+		if (link) {
+			if(sourceId < targetId) {
+				link.right = true;
+			} else {
+				link.left = true;
+			}
+		} else {
+			if(sourceId < targetId) {
+				links.push({source: source, target: target, left: false, right: true, agent: succ.agent });
+			} else {
+				links.push({source: target, target: source, left: true, right: false, agent: succ.agent });
+			}
+		}
+	}
 }
 
 // set up SVG for D3
@@ -521,6 +520,71 @@ function tick() {
   });
 }
 
+function updateModel() {
+	let json = document.getElementById("jsonModel").value
+	model.fromJSON(json);
+	onStateModified()
+
+	lastNodeId = -1;
+	nodes = [];
+	links = [];
+
+	var states = model.getStates();
+	const propVarsInUse = new Set();
+	states.forEach(function(state) {
+		if (!state) { lastNodeId++; return; }
+
+		var defaultVals = propvars.map(function() { return false; }),
+			node = { id: ++lastNodeId, vals: defaultVals };
+
+		for (var propvar in state) {
+			propVarsInUse.add(propvar);
+			var index = propvars.indexOf(propvar);
+			if (index !== -1) {
+				node.vals[index] = true;
+				varCount = Math.max(varCount, index + 1); 
+			}
+		}
+
+		nodes.push(node);
+	});
+
+	for (const source of nodes) {
+		const sourceId = source.id;
+		for (const succ of model.getSuccessorsOf(sourceId)) {
+			const targetId = succ.target;
+			if (sourceId === targetId) {
+				links.push({ source: source, target: source, left: true, right: true, agent: succ.agent });
+				continue;
+			}
+
+			const target = nodes.filter(function(node) { return node.id === targetId; })[0];
+			const link = links.filter(l => l.source === target && l.target === source && l.agent === succ.agent)[0];
+
+			if (link) {
+				if (sourceId < targetId) {
+					link.right = true;
+				} else {
+					link.left = true;
+				}
+			} else {
+				if (sourceId < targetId) {
+					links.push({ source: source, target: target, left: false, right: true, agent: succ.agent });
+				} else {
+					links.push({ source: target, target: source, left: true, right: false, agent: succ.agent });
+				}
+			}
+		}
+	}
+
+	force.nodes(nodes);
+	force.links(links);
+	force.start();
+	restart();
+}
+
+
+
 function getDoubleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
   const facing = [
     x2 - x1,
@@ -551,194 +615,193 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
 
 // update graph (called when needed)
 function restart() {
-  // path (link) group
-  path = path.data(links);
+	// path (link) group
+	path = path.data(links);
 
-  function mid(d) {
-    return `url(#mid-arrow-${d.agent})`;
-  }
-  function start(d) {
-    return d.left ? `url(#start-arrow-${d.agent})` : '';
-  }
-  function end(d) {
-    return d.right ? `url(#end-arrow-${d.agent})` : '';
-  }
+	function mid(d) {
+		return `url(#mid-arrow-${d.agent})`;
+	}
+	function start(d) {
+		return d.left ? `url(#start-arrow-${d.agent})` : '';
+	}
+	function end(d) {
+		return d.right ? `url(#end-arrow-${d.agent})` : '';
+	}
 
-  // update existing links
-  path.classed('selected', function(d) { return d === selected_link; })
-    .classed('agent-a', function(d) { return d.agent === 'a'; })
-    .classed('agent-b', function(d) { return d.agent === 'b'; })
-    .classed('agent-c', function(d) { return d.agent === 'c'; })
-    .classed('agent-d', function(d) { return d.agent === 'd'; })
-    .classed('agent-e', function(d) { return d.agent === 'e'; })
-    .style('marker-start', start)
-    .style('marker-end', end)
-    .style('marker-mid', mid);
+	// update existing links
+	path.classed('selected', function(d) { return d === selected_link; })
+		.classed('agent-a', function(d) { return d.agent === 'a'; })
+		.classed('agent-b', function(d) { return d.agent === 'b'; })
+		.classed('agent-c', function(d) { return d.agent === 'c'; })
+		.classed('agent-d', function(d) { return d.agent === 'd'; })
+		.classed('agent-e', function(d) { return d.agent === 'e'; })
+		.style('marker-start', start)
+		.style('marker-end', end)
+		.style('marker-mid', mid);
 
-  // add new links
-  path.enter().append('svg:path')
-    .attr('class', 'link')
-    .classed('selected', function(d) { return d === selected_link; })
-    .classed('agent-a', function(d) { return d.agent === 'a'; })
-    .classed('agent-b', function(d) { return d.agent === 'b'; })
-    .classed('agent-c', function(d) { return d.agent === 'c'; })
-    .classed('agent-d', function(d) { return d.agent === 'd'; })
-    .classed('agent-e', function(d) { return d.agent === 'e'; })
-    .style('marker-start', start)
-    .style('marker-end', end)
-    .style('marker-mid', mid)
-    .on('mousedown', function(d) {
-      if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
+	// add new links
+	path.enter().append('svg:path')
+		.attr('class', 'link')
+		.classed('selected', function(d) { return d === selected_link; })
+		.classed('agent-a', function(d) { return d.agent === 'a'; })
+		.classed('agent-b', function(d) { return d.agent === 'b'; })
+		.classed('agent-c', function(d) { return d.agent === 'c'; })
+		.classed('agent-d', function(d) { return d.agent === 'd'; })
+		.classed('agent-e', function(d) { return d.agent === 'e'; })
+		.style('marker-start', start)
+		.style('marker-end', end)
+		.style('marker-mid', mid)
+		.on('mousedown', function(d) {
+			if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
+			// select link
+			mousedown_link = d;
+			if(mousedown_link === selected_link) selected_link = null;
+			else selected_link = mousedown_link;
+			setSelectedNode(null);
+			restart();
+		});
 
-      // select link
-      mousedown_link = d;
-      if(mousedown_link === selected_link) selected_link = null;
-      else selected_link = mousedown_link;
-      setSelectedNode(null);
-      restart();
-    });
+	// remove old links
+	path.exit().remove();
 
-  // remove old links
-  path.exit().remove();
+	// circle (node) group
+	// NB: the function arg is crucial here! nodes are known by id, not by index!
+		circle = circle.data(nodes, function(d) { return d.id; });
 
-  // circle (node) group
-  // NB: the function arg is crucial here! nodes are known by id, not by index!
-  circle = circle.data(nodes, function(d) { return d.id; });
+	// update existing nodes (reflexive & selected visual states)
+	circle.selectAll('circle')
+		.style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
+		.style('stroke-width', '3px')
+		.style('stroke', d => (d === selected_node) ? 'black': 'transparent');
 
-  // update existing nodes (reflexive & selected visual states)
-  circle.selectAll('circle')
-    .style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
-    .style('stroke-width', '3px')
-    .style('stroke', d => (d === selected_node) ? 'black': 'transparent');
+	// add new nodes
+	var g = circle.enter().append('svg:g');
 
-  // add new nodes
-  var g = circle.enter().append('svg:g');
+	g.append('svg:circle')
+		.attr('class', 'node')
+		.attr('r', 15)
+		.style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
+		.style('stroke-width', '3px')
+		.style('stroke', d => (d === selected_node) ? 'black': 'transparent')
+		.on('mouseover', function(d) {
+			if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
+			// enlarge target node
+			d3.select(this).attr('transform', 'scale(1.1)');
+		})
+		.on('mouseout', function(d) {
+			if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
+			// unenlarge target node
+			d3.select(this).attr('transform', '');
+		})
+		.on('mousedown', function(d) {
+			if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
 
-  g.append('svg:circle')
-    .attr('class', 'node')
-    .attr('r', 15)
-    .style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
-    .style('stroke-width', '3px')
-    .style('stroke', d => (d === selected_node) ? 'black': 'transparent')
-    .on('mouseover', function(d) {
-      if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
-      // enlarge target node
-      d3.select(this).attr('transform', 'scale(1.1)');
-    })
-    .on('mouseout', function(d) {
-      if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
-      // unenlarge target node
-      d3.select(this).attr('transform', '');
-    })
-    .on('mousedown', function(d) {
-      if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
+			// select node
+			mousedown_node = d;
+			if(mousedown_node === selected_node) setSelectedNode(null);
+			else setSelectedNode(mousedown_node);
+			selected_link = null;
 
-      // select node
-      mousedown_node = d;
-      if(mousedown_node === selected_node) setSelectedNode(null);
-      else setSelectedNode(mousedown_node);
-      selected_link = null;
+			// start dragging with drag line
+			drag_line
+				.style('marker-end', `url(#end-arrow-${currentEpistemicAgent})`)
+				.classed('hidden', false)
+				.classed('agent-a', function() { return currentEpistemicAgent === 'a'; })
+				.classed('agent-b', function() { return currentEpistemicAgent === 'b'; })
+				.classed('agent-c', function() { return currentEpistemicAgent === 'c'; })
+				.classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
+				.classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
+				.attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'Q' + mousedown_node.x + ' ' + mousedown_node.y + ',' + mousedown_node.x + ' ' + mousedown_node.y)
+				.style('marker-mid', mid);
 
-      // start dragging with drag line
-      drag_line
-        .style('marker-end', `url(#end-arrow-${currentEpistemicAgent})`)
-        .classed('hidden', false)
-        .classed('agent-a', function() { return currentEpistemicAgent === 'a'; })
-        .classed('agent-b', function() { return currentEpistemicAgent === 'b'; })
-        .classed('agent-c', function() { return currentEpistemicAgent === 'c'; })
-        .classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
-        .classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
-        .attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'Q' + mousedown_node.x + ' ' + mousedown_node.y + ',' + mousedown_node.x + ' ' + mousedown_node.y)
-        .style('marker-mid', mid);
+			function mid() {
+				return `url(#mid-arrow-${currentEpistemicAgent})`;
+			}
 
-      function mid() {
-        return `url(#mid-arrow-${currentEpistemicAgent})`;
-      }
+			restart();
+		})
+		.on('mouseup', function(d) {
+			if(appMode !== MODE.EDIT || !mousedown_node) return;
 
-      restart();
-    })
-    .on('mouseup', function(d) {
-      if(appMode !== MODE.EDIT || !mousedown_node) return;
+			// drag line dropped ontop of a node
+			drag_line
+				.classed('hidden', true)
+				.style('marker-end', '');
 
-      // drag line dropped ontop of a node
-      drag_line
-        .classed('hidden', true)
-        .style('marker-end', '');
+			// check for drag-to-self
+			mouseup_node = d;
+			if(mouseup_node === mousedown_node) { resetMouseVars(); return; }
 
-      // check for drag-to-self
-      mouseup_node = d;
-      if(mouseup_node === mousedown_node) { resetMouseVars(); return; }
+			// unenlarge target node
+			d3.select(this).attr('transform', '');
 
-      // unenlarge target node
-      d3.select(this).attr('transform', '');
+			// add transition to model
+			model.addTransition(mousedown_node.id, mouseup_node.id, currentEpistemicAgent);
+			onStateModified();
 
-      // add transition to model
-      model.addTransition(mousedown_node.id, mouseup_node.id, currentEpistemicAgent);
-      onStateModified();
+			// add link to graph (update if exists)
+			// note: links are strictly source < target; arrows separately specified by booleans
+			var source, target, direction;
+			if(mousedown_node.id < mouseup_node.id) {
+				source = mousedown_node;
+				target = mouseup_node;
+				direction = 'right';
+			} else {
+				source = mouseup_node;
+				target = mousedown_node;
+				direction = 'left';
+			}
 
-      // add link to graph (update if exists)
-      // note: links are strictly source < target; arrows separately specified by booleans
-      var source, target, direction;
-      if(mousedown_node.id < mouseup_node.id) {
-        source = mousedown_node;
-        target = mouseup_node;
-        direction = 'right';
-      } else {
-        source = mouseup_node;
-        target = mousedown_node;
-        direction = 'left';
-      }
+			var link = links.filter(function(l) {
+				return (l.source === source && l.target === target && l.agent === currentEpistemicAgent);
+			})[0];
 
-      var link = links.filter(function(l) {
-        return (l.source === source && l.target === target && l.agent === currentEpistemicAgent);
-      })[0];
+			if(link) {
+				link[direction] = true;
+			} else {
+				link = {source: source, target: target, left: false, right: false, agent: currentEpistemicAgent};
+				link[direction] = true;
+				links.push(link);
+			}
 
-      if(link) {
-        link[direction] = true;
-      } else {
-        link = {source: source, target: target, left: false, right: false, agent: currentEpistemicAgent};
-        link[direction] = true;
-        links.push(link);
-      }
+			// select new link
+			selected_link = link;
+			setSelectedNode(null);
+			restart();
+		});
 
-      // select new link
-      selected_link = link;
-      setSelectedNode(null);
-      restart();
-    });
+	// show node IDs
+	g.append('svg:text')
+		.attr('x', 0)
+		.attr('y', 4)
+		.attr('class', 'id')
+		.attr('fill', 'white')
+		.text(function(d) { return d.id; });
 
-  // show node IDs
-  g.append('svg:text')
-      .attr('x', 0)
-      .attr('y', 4)
-      .attr('class', 'id')
-      .attr('fill', 'white')
-      .text(function(d) { return d.id; });
+	// text shadow
+	g.append('svg:text')
+		.attr('x', 18)
+		.attr('y', 4)
+		.attr('class', 'shadow')
+		.text(makeAssignmentString);
 
-  // text shadow
-  g.append('svg:text')
-      .attr('x', 18)
-      .attr('y', 4)
-      .attr('class', 'shadow')
-      .text(makeAssignmentString);
+	// text foreground
+	g.append('svg:text')
+		.attr('x', 18)
+		.attr('y', 4)
+		.text(makeAssignmentString);
 
-  // text foreground
-  g.append('svg:text')
-      .attr('x', 18)
-      .attr('y', 4)
-      .text(makeAssignmentString);
+	// remove old nodes
+	circle.exit().remove();
 
-  // remove old nodes
-  circle.exit().remove();
-
-  // set the graph in motion
-  force.start();
+	// set the graph in motion
+	force.start();
 }
 
 // Set the reflexive, symmetric, and transitive checkboxes to the correct state whenever the model
 // changes. Also update the URL with the shareable model and formula state.
-function onStateModified(new_model=model) {
-  const modelString = '?model=' + new_model.getModelString();
+function onStateModified() {
+  const modelString = '?model=' + model.getModelString();
   let formulaString = '?formula=' + evalInput.select('input').node().value;
   formulaString = formulaString.split(' ').join(''); //remove spaces
   formulaString = formulaString.split('>').join(''); //remove > (> doesn't work in URLs)
@@ -748,7 +811,7 @@ function onStateModified(new_model=model) {
   const symmetricCheckEl = document.getElementById('symmetric-check');
   const transitiveCheckEl = document.getElementById('transitive-check');
 
-  const activeAgents = new_model.getActiveAgents();
+  const activeAgents = model.getActiveAgents();
   if (activeAgents.length === 0) {
     reflexiveCheckEl.checked = false;
     symmetricCheckEl.checked = false;
@@ -760,9 +823,9 @@ function onStateModified(new_model=model) {
     let symmetricForActiveAgents = true;
     let transitiveForActiveAgents = true;
     for (const agent of activeAgents) {
-      reflexiveForActiveAgents = reflexiveForActiveAgents && new_model.isReflexive(agent);
-      symmetricForActiveAgents = symmetricForActiveAgents && new_model.isSymmetric(agent);
-      transitiveForActiveAgents = transitiveForActiveAgents && new_model.isTransitive(agent);
+      reflexiveForActiveAgents = reflexiveForActiveAgents && model.isReflexive(agent);
+      symmetricForActiveAgents = symmetricForActiveAgents && model.isSymmetric(agent);
+      transitiveForActiveAgents = transitiveForActiveAgents && model.isTransitive(agent);
     }
     reflexiveCheckEl.checked = reflexiveForActiveAgents;
     symmetricCheckEl.checked = symmetricForActiveAgents;
@@ -998,18 +1061,7 @@ function keyup() {
 var modeButtons = d3.selectAll('#mode-select button'),
     panes = d3.selectAll('#app-body .panel .tab-pane');
 
-// Función que actualza el modelo en base a un json. Para ello crea una url nueva. IMP> No mantiene la información de la fórmula.
-function updateModel(){
-	let json = document.getElementById("jsonModel").value
-	let new_model = new MPL.Model()
-    new_model.fromJSON(json);
-	// const modelString = '?model=' + new_model.getModelString();
-	// let formulaString = '?formula=' + evalInput.select('input').node().value;
-	// formulaString = formulaString.split(' ').join(''); //remove spaces
-	// formulaString = formulaString.split('>').join(''); //remove > (> doesn't work in URLs)
-	// history.pushState({}, '', location.pathname + modelString + formulaString);
-	onStateModified(new_model);
-}
+
 
 
 
