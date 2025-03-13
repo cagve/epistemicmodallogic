@@ -515,13 +515,20 @@ function tick() {
     return getDoubleCurvedSVGPath([sourceX, sourceY], [targetX, targetY], mul);
   });
 
-  circle.attr('transform', function(d) {
-    return 'translate(' + d.x + ',' + d.y + ')';
+	circle.attr('transform', function(d) {
+		return 'translate(' + d.x + ',' + d.y + ')';
   });
 }
 
-function updateModel() {
-	// COMPLETE THIS
+function updateModel() { // TODO recarga a la pagina inicial. Funciona con redireccion de url.
+	let json = document.getElementById("jsonModel").value
+	model.fromJSON(json);
+	const modelString = '?model=' + model.getModelString();
+	let formulaString = '?formula=' + evalInput.select('input').node().value;
+	formulaString = formulaString.split(' ').join(''); //remove spaces
+	formulaString = formulaString.split('>').join(''); //remove > (> doesn't work in URLs)
+	history.pushState({}, '', location.pathname + modelString + formulaString);
+	window.location.reload();
 }
 
 
@@ -607,7 +614,7 @@ function restart() {
 
 	// circle (node) group
 	// NB: the function arg is crucial here! nodes are known by id, not by index!
-		circle = circle.data(nodes, function(d) { return d.id+1; });
+	circle = circle.data(nodes, function(d) { return d.id+1; });
 
 	// update existing nodes (reflexive & selected visual states)
 	circle.selectAll('circle')
@@ -775,6 +782,7 @@ function onStateModified() {
     `For agent${activeAgents.length === 1 ? '' : 's'} ${activeAgents.join()} :`;
   }
 }
+
 onStateModified();
 
 function mousedown() {
@@ -1001,9 +1009,6 @@ function keyup() {
 // handles to mode select buttons and left-hand panel
 var modeButtons = d3.selectAll('#mode-select button'),
     panes = d3.selectAll('#app-body .panel .tab-pane');
-
-
-
 
 
 function setAppMode(newMode) {
