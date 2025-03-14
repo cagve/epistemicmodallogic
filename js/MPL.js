@@ -495,7 +495,6 @@ var MPL = (function (FormulaParser) {
 		return groupSucc;
 	}
 
-	  
 	  // group matrix = cierre transitivo + reflexivo
 	  this.groupMatrix = function (relations){ 
 		  let n = this.getStates().length; 
