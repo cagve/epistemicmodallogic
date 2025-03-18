@@ -467,31 +467,30 @@ var MPL = (function (FormulaParser) {
       }
     }
 
-	this.getSuccessorOfAgent = function(agent){
-		console.log(agent)
-		let allAccRel = []
-		_states.forEach((state, index) => {
-			state.successors.forEach(successor => {
-				if (agent == successor.agent){
-					let relation = {
-						source: index,
-						target: successor.target,
-						agent: successor.agent
+	  this.getSuccessorOfAgent = function(agent){
+		  let allAccRel = []
+		  _states.forEach((state, index) => {
+			  if (state){
+				  state.successors.forEach(successor => {
+					  if (agent == successor.agent){
+						  let relation = {
+							  source: index,
+							  target: successor.target,
+							  agent: successor.agent
 
-					}
-					allAccRel.push(relation)
-				}
-			});
-		});
-		return allAccRel;
-	}
+						  }
+						  allAccRel.push(relation)
+					  }
+				  });
+			  }
+		  })
+		  return allAccRel;
+	  }
 
 	  // Devuelve el conjunto de relaciones para un array de agentes.
 	this.getGroupSuccessor = function (agents){
-		console.log(agents)
 		let groupSucc = [];
 		agents.forEach ((agent) => {
-			console.log("HOLA")
 			let succ = this.getSuccessorOfAgent(agent);
 			groupSucc.push(...succ);
 		});
@@ -532,8 +531,6 @@ var MPL = (function (FormulaParser) {
 	  }
 
 	this.groupClosure = function (agents) {
-		console.log("Group Closure")
-		console.log(agents)
 		// obtenemos todos las relaciones del grupo.
 		let allRelations = this.getGroupSuccessor(agents)
 
@@ -549,7 +546,6 @@ var MPL = (function (FormulaParser) {
 
     this.getGroupSuccessorOf = function(state, agents) {
 		let groupModel = this.groupClosure(agents)
-		console.log(groupModel)
 		return groupModel.getSuccessorsOf(state)
 	}
     /**
@@ -578,13 +574,9 @@ var MPL = (function (FormulaParser) {
       return !_truth(model, state, json.neg);
     else if (json.common_start && json.common_start.group_end && json.common_start.group_end[0].prop) {
 		const agents = json.common_start.group_end[0].prop.split('');
-		console.log(agents)
 		let modelprima = model.groupClosure(agents)
-		// console.log(agents)
-
-		// let succs = modelprima.getGroupSuccessorOf(state,agents) //Computa cada vez lo transitivo optimizar TODO
-		// return succs.every( succ => _truth(model, succ.target, json.common_start.group_end[1]));
-		return true
+		let succs = modelprima.getGroupSuccessorOf(state,agents) //Computa cada vez lo transitivo optimizar TODO
+		return succs.every( succ => _truth(model, succ.target, json.common_start.group_end[1]));
 	}
     else if (json.kno_start && json.kno_start.group_end && json.kno_start.group_end[0].prop) {
       const agents = json.kno_start.group_end[0].prop.split('');
