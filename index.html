@@ -9,8 +9,8 @@
 
   <body>
     <div id="page-container">
-      <a href="https://github.com/vezwork/modallogic"><img class="github-link" src="img/blacktocat-32.png" title="Fork me on GitHub"></a>
-      <h1>Dynamic Epistemic Logic Playground</h1>
+      <a href="https://github.com/cagve/epistemicmodallogic"><img class="github-link" src="img/blacktocat-32.png" title="Fork me on GitHub"></a>
+      <h1>Dynamic Epistemic Logic Playground(FORK)</h1>
       <section id="app">
         <div id="mode-select" class="btn-group">
           <button class="btn btn-primary active" onclick="setAppMode(MODE.EDIT)">
@@ -19,10 +19,19 @@
           <button class="btn btn-primary" onclick="setAppMode(MODE.EVAL)">
             <i class="icon-eye-open icon-white"></i> Evaluate Formula
           </button>
+          <button class="btn btn-primary" onclick="setAppMode(MODE.TEXT)">
+            <i class="icon-eye-open icon-white"></i> Text mode
+          </button>
         </div>
         <div id="app-body">
           <div class="panel tab-content">
             <div id="edit-pane" class="tab-pane active">
+				<div id="upload-pane">
+					<input type="file" id="fileInput" style="display: none;">
+					<button id="readFileButton">Upload Model</button>
+					<pre id="fileContent"></pre>
+				</div>
+
               <div class="agent-btns">
                 Current agent:<br>
                 <div class="btn-group">
@@ -97,6 +106,49 @@
                 </ul>
               </div>
             </div>
+            <div id="text-pane" class="tab-pane">
+				<textarea name="textarea" id="jsonModel" rows="10" cols="23">
+{
+  "states": [
+    {
+      "id": 0,
+      "assignment": {
+        "p": true,
+        "q": false
+      },
+      "successors": [
+        {
+          "agent": "a",
+          "target": 1
+        },
+        {
+          "agent": "b",
+          "target": 0
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "assignment": {
+        "p": false,
+        "q": true
+      },
+      "successors": [
+        {
+          "agent": "a",
+          "target": 0
+        },
+        {
+          "agent": "b",
+          "target": 1
+        }
+      ]
+    }
+  ]
+}
+</textarea>
+				<button onclick="updateModel()">Update Model</button>
+			</div>
           </div>
           <div style="position: absolute; bottom: 10px; left: 310px; z-index: 10;">
             <i style="color: gray;" id="checks-title">loading...</i><br>
@@ -111,6 +163,12 @@
           <div class="current-formula inactive"></div>
         </div>
       </section>
+      <section class="text-section">
+		<h2>New things</h2>
+        <ul class="unstyled">
+          <li class="mb-1">Insert model using JSON</li>
+		</ul>
+	  </section>
       <section class="text-section">
         <h2>Editing Instructions</h2>
         <ul class="unstyled">
@@ -282,4 +340,6 @@
   <script src="lib/formula-parser.min.js"></script>
   <script src="js/MPL.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/utils.js"></script>
+
 </html>

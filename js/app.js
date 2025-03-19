@@ -9,8 +9,9 @@
 
 // app mode constants
 var MODE = {
-      EDIT: 0,
-      EVAL: 1
+	EDIT: 0,
+	EVAL: 1,
+	TEXT: 2
     },
     appMode = MODE.EDIT;
 
@@ -34,58 +35,58 @@ model.loadFromModelString(modelString);
 
 // set up initial nodes and links (edges) of graph, based on MPL model
 var lastNodeId = -1,
-    nodes = [],
-    links = [];
+	nodes = [],
+	links = [];
 
 // --> nodes setup
 var states = model.getStates();
 const propVarsInUse = new Set();
 states.forEach(function(state) {
-  if(!state) { lastNodeId++; return; }
+	if(!state) { lastNodeId++; return; }
 
-  var defaultVals = propvars.map(function() { return false; }),
-      node = {id: ++lastNodeId, vals: defaultVals};
+	var defaultVals = propvars.map(function() { return false; }),
+		node = {id: ++lastNodeId, vals: defaultVals};
 
-  for(var propvar in state) {
-    propVarsInUse.add(propvar);
-    var index = propvars.indexOf(propvar);
-    if(index !== -1) {
-      node.vals[index] = true;
-      varCount = Math.max(varCount, index+1); // set correct var count from state
-    }
-  }
+	for(var propvar in state) {
+		propVarsInUse.add(propvar);
+		var index = propvars.indexOf(propvar);
+		if(index !== -1) {
+			node.vals[index] = true;
+			varCount = Math.max(varCount, index+1); // set correct var count from state
+		}
+	}
 
-  nodes.push(node);
+	nodes.push(node);
 });
 
 
 // --> links setup
 for (const source of nodes) {
-  const sourceId = source.id;
-  for (const succ of model.getSuccessorsOf(sourceId)) {
-    const targetId = succ.target;
-    if(sourceId === targetId) {
-      links.push({source: source, target: source, left: true, right: true, agent: succ.agent });
-      continue;
-    }
+	const sourceId = source.id;
+	for (const succ of model.getSuccessorsOf(sourceId)) {
+		const targetId = succ.target;
+		if(sourceId === targetId) {
+			links.push({source: source, target: source, left: true, right: true, agent: succ.agent });
+			continue;
+		}
 
-    const target = nodes.filter(function(node) { return node.id === targetId; })[0];
-    const link = links.filter(l => l.source === target && l.target === source && l.agent === succ.agent)[0];
+		const target = nodes.filter(function(node) { return node.id === targetId; })[0];
+		const link = links.filter(l => l.source === target && l.target === source && l.agent === succ.agent)[0];
 
-    if (link) {
-      if(sourceId < targetId) {
-        link.right = true;
-      } else {
-        link.left = true;
-      }
-    } else {
-      if(sourceId < targetId) {
-        links.push({source: source, target: target, left: false, right: true, agent: succ.agent });
-      } else {
-        links.push({source: target, target: source, left: true, right: false, agent: succ.agent });
-      }
-    }
-  }
+		if (link) {
+			if(sourceId < targetId) {
+				link.right = true;
+			} else {
+				link.left = true;
+			}
+		} else {
+			if(sourceId < targetId) {
+				links.push({source: source, target: target, left: false, right: true, agent: succ.agent });
+			} else {
+				links.push({source: target, target: source, left: true, right: false, agent: succ.agent });
+			}
+		}
+	}
 }
 
 // set up SVG for D3
@@ -196,7 +197,6 @@ function announceFormula() {
   try {
     wff = new MPL.Wff(formula);
   } catch(e) {
-    console.log(e);
     evalOutput
       .html('<div class="alert">Invalid formula!</div>')
       .classed('inactive', false);
@@ -283,7 +283,6 @@ function evaluateFormula() {
   try {
     wff = new MPL.Wff(formula);
   } catch(e) {
-    console.log(e);
     evalOutput
       .html('<div class="alert">Invalid formula!</div>')
       .classed('inactive', false);
@@ -362,13 +361,29 @@ function getWffAgentsAndProps(json) {
     return getWffAgentsAndProps(json.nec);
   else if (json.poss)
     return getWffAgentsAndProps(json.poss);
-  else if (json.kno_start &&
-           json.kno_start.kno_end &&
-           json.kno_start.kno_end[0].prop &&
-           json.kno_start.kno_end.length === 2
+  else if (json.dist_start &&
+           json.dist_start.group_end &&
+           json.dist_start.group_end[0].prop &&
+           json.dist_start.group_end.length === 2
   ) {
-    const agent = json.kno_start.kno_end[0].prop;
-    return [{ agent }].concat(getWffAgentsAndProps(json.kno_start.kno_end[1]));
+    const agent = json.dist_start.group_end[0].prop;
+    return [{ agent }].concat(getWffAgentsAndProps(json.dist_start.group_end[1]));
+  }
+  else if (json.common_start &&
+           json.common_start.group_end &&
+           json.common_start.group_end[0].prop &&
+           json.common_start.group_end.length === 2
+  ) {
+    const agent = json.common_start.group_end[0].prop;
+    return [{ agent }].concat(getWffAgentsAndProps(json.common_start.group_end[1]));
+  }
+  else if (json.kno_start &&
+           json.kno_start.group_end &&
+           json.kno_start.group_end[0].prop &&
+           json.kno_start.group_end.length === 2
+  ) {
+    const agent = json.kno_start.group_end[0].prop;
+    return [{ agent }].concat(getWffAgentsAndProps(json.kno_start.group_end[1]));
   }
   else if (json.annce_start &&
              json.annce_start.annce_end &&
@@ -508,10 +523,25 @@ function tick() {
     return getDoubleCurvedSVGPath([sourceX, sourceY], [targetX, targetY], mul);
   });
 
-  circle.attr('transform', function(d) {
-    return 'translate(' + d.x + ',' + d.y + ')';
+	circle.attr('transform', function(d) {
+		return 'translate(' + d.x + ',' + d.y + ')';
   });
 }
+
+function updateModel(json) { // TODO recarga a la pagina inicial. Funciona con redireccion de url.
+		if (!json){
+			json = document.getElementById("jsonModel").value
+		}
+	model.fromJSON(json);
+	const modelString = '?model=' + model.getModelString();
+	let formulaString = '?formula=' + evalInput.select('input').node().value;
+	formulaString = formulaString.split(' ').join(''); //remove spaces
+	formulaString = formulaString.split('>').join(''); //remove > (> doesn't work in URLs)
+	history.pushState({}, '', location.pathname + modelString + formulaString);
+	window.location.reload();
+}
+
+
 
 function getDoubleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
   const facing = [
@@ -543,188 +573,187 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
 
 // update graph (called when needed)
 function restart() {
-  // path (link) group
-  path = path.data(links);
+	// path (link) group
+	path = path.data(links);
 
-  function mid(d) {
-    return `url(#mid-arrow-${d.agent})`;
-  }
-  function start(d) {
-    return d.left ? `url(#start-arrow-${d.agent})` : '';
-  }
-  function end(d) {
-    return d.right ? `url(#end-arrow-${d.agent})` : '';
-  }
+	function mid(d) {
+		return `url(#mid-arrow-${d.agent})`;
+	}
+	function start(d) {
+		return d.left ? `url(#start-arrow-${d.agent})` : '';
+	}
+	function end(d) {
+		return d.right ? `url(#end-arrow-${d.agent})` : '';
+	}
 
-  // update existing links
-  path.classed('selected', function(d) { return d === selected_link; })
-    .classed('agent-a', function(d) { return d.agent === 'a'; })
-    .classed('agent-b', function(d) { return d.agent === 'b'; })
-    .classed('agent-c', function(d) { return d.agent === 'c'; })
-    .classed('agent-d', function(d) { return d.agent === 'd'; })
-    .classed('agent-e', function(d) { return d.agent === 'e'; })
-    .style('marker-start', start)
-    .style('marker-end', end)
-    .style('marker-mid', mid);
+	// update existing links
+	path.classed('selected', function(d) { return d === selected_link; })
+		.classed('agent-a', function(d) { return d.agent === 'a'; })
+		.classed('agent-b', function(d) { return d.agent === 'b'; })
+		.classed('agent-c', function(d) { return d.agent === 'c'; })
+		.classed('agent-d', function(d) { return d.agent === 'd'; })
+		.classed('agent-e', function(d) { return d.agent === 'e'; })
+		.style('marker-start', start)
+		.style('marker-end', end)
+		.style('marker-mid', mid);
 
-  // add new links
-  path.enter().append('svg:path')
-    .attr('class', 'link')
-    .classed('selected', function(d) { return d === selected_link; })
-    .classed('agent-a', function(d) { return d.agent === 'a'; })
-    .classed('agent-b', function(d) { return d.agent === 'b'; })
-    .classed('agent-c', function(d) { return d.agent === 'c'; })
-    .classed('agent-d', function(d) { return d.agent === 'd'; })
-    .classed('agent-e', function(d) { return d.agent === 'e'; })
-    .style('marker-start', start)
-    .style('marker-end', end)
-    .style('marker-mid', mid)
-    .on('mousedown', function(d) {
-      if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
+	// add new links
+	path.enter().append('svg:path')
+		.attr('class', 'link')
+		.classed('selected', function(d) { return d === selected_link; })
+		.classed('agent-a', function(d) { return d.agent === 'a'; })
+		.classed('agent-b', function(d) { return d.agent === 'b'; })
+		.classed('agent-c', function(d) { return d.agent === 'c'; })
+		.classed('agent-d', function(d) { return d.agent === 'd'; })
+		.classed('agent-e', function(d) { return d.agent === 'e'; })
+		.style('marker-start', start)
+		.style('marker-end', end)
+		.style('marker-mid', mid)
+		.on('mousedown', function(d) {
+			if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
+			// select link
+			mousedown_link = d;
+			if(mousedown_link === selected_link) selected_link = null;
+			else selected_link = mousedown_link;
+			setSelectedNode(null);
+			restart();
+		});
 
-      // select link
-      mousedown_link = d;
-      if(mousedown_link === selected_link) selected_link = null;
-      else selected_link = mousedown_link;
-      setSelectedNode(null);
-      restart();
-    });
+	// remove old links
+	path.exit().remove();
 
-  // remove old links
-  path.exit().remove();
+	// circle (node) group
+	// NB: the function arg is crucial here! nodes are known by id, not by index!
+	circle = circle.data(nodes, function(d) { return d.id+1; });
 
-  // circle (node) group
-  // NB: the function arg is crucial here! nodes are known by id, not by index!
-  circle = circle.data(nodes, function(d) { return d.id; });
+	// update existing nodes (reflexive & selected visual states)
+	circle.selectAll('circle')
+		.style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
+		.style('stroke-width', '3px')
+		.style('stroke', d => (d === selected_node) ? 'black': 'transparent');
 
-  // update existing nodes (reflexive & selected visual states)
-  circle.selectAll('circle')
-    .style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
-    .style('stroke-width', '3px')
-    .style('stroke', d => (d === selected_node) ? 'black': 'transparent');
+	// add new nodes
+	var g = circle.enter().append('svg:g');
 
-  // add new nodes
-  var g = circle.enter().append('svg:g');
+	g.append('svg:circle')
+		.attr('class', 'node')
+		.attr('r', 15)
+		.style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
+		.style('stroke-width', '3px')
+		.style('stroke', d => (d === selected_node) ? 'black': 'transparent')
+		.on('mouseover', function(d) {
+			if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
+			// enlarge target node
+			d3.select(this).attr('transform', 'scale(1.1)');
+		})
+		.on('mouseout', function(d) {
+			if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
+			// unenlarge target node
+			d3.select(this).attr('transform', '');
+		})
+		.on('mousedown', function(d) {
+			if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
 
-  g.append('svg:circle')
-    .attr('class', 'node')
-    .attr('r', 15)
-    .style('fill', d => (d === selected_node) ? d3.rgb(colors(d.id)).brighter() : colors(d.id))
-    .style('stroke-width', '3px')
-    .style('stroke', d => (d === selected_node) ? 'black': 'transparent')
-    .on('mouseover', function(d) {
-      if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
-      // enlarge target node
-      d3.select(this).attr('transform', 'scale(1.1)');
-    })
-    .on('mouseout', function(d) {
-      if(appMode !== MODE.EDIT || !mousedown_node || d === mousedown_node) return;
-      // unenlarge target node
-      d3.select(this).attr('transform', '');
-    })
-    .on('mousedown', function(d) {
-      if(appMode !== MODE.EDIT || d3.event.ctrlKey) return;
+			// select node
+			mousedown_node = d;
+			if(mousedown_node === selected_node) setSelectedNode(null);
+			else setSelectedNode(mousedown_node);
+			selected_link = null;
 
-      // select node
-      mousedown_node = d;
-      if(mousedown_node === selected_node) setSelectedNode(null);
-      else setSelectedNode(mousedown_node);
-      selected_link = null;
+			// start dragging with drag line
+			drag_line
+				.style('marker-end', `url(#end-arrow-${currentEpistemicAgent})`)
+				.classed('hidden', false)
+				.classed('agent-a', function() { return currentEpistemicAgent === 'a'; })
+				.classed('agent-b', function() { return currentEpistemicAgent === 'b'; })
+				.classed('agent-c', function() { return currentEpistemicAgent === 'c'; })
+				.classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
+				.classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
+				.attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'Q' + mousedown_node.x + ' ' + mousedown_node.y + ',' + mousedown_node.x + ' ' + mousedown_node.y)
+				.style('marker-mid', mid);
 
-      // start dragging with drag line
-      drag_line
-        .style('marker-end', `url(#end-arrow-${currentEpistemicAgent})`)
-        .classed('hidden', false)
-        .classed('agent-a', function() { return currentEpistemicAgent === 'a'; })
-        .classed('agent-b', function() { return currentEpistemicAgent === 'b'; })
-        .classed('agent-c', function() { return currentEpistemicAgent === 'c'; })
-        .classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
-        .classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
-        .attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'Q' + mousedown_node.x + ' ' + mousedown_node.y + ',' + mousedown_node.x + ' ' + mousedown_node.y)
-        .style('marker-mid', mid);
+			function mid() {
+				return `url(#mid-arrow-${currentEpistemicAgent})`;
+			}
 
-      function mid() {
-        return `url(#mid-arrow-${currentEpistemicAgent})`;
-      }
+			restart();
+		})
+		.on('mouseup', function(d) {
+			if(appMode !== MODE.EDIT || !mousedown_node) return;
 
-      restart();
-    })
-    .on('mouseup', function(d) {
-      if(appMode !== MODE.EDIT || !mousedown_node) return;
+			// drag line dropped ontop of a node
+			drag_line
+				.classed('hidden', true)
+				.style('marker-end', '');
 
-      // drag line dropped ontop of a node
-      drag_line
-        .classed('hidden', true)
-        .style('marker-end', '');
+			// check for drag-to-self
+			mouseup_node = d;
+			if(mouseup_node === mousedown_node) { resetMouseVars(); return; }
 
-      // check for drag-to-self
-      mouseup_node = d;
-      if(mouseup_node === mousedown_node) { resetMouseVars(); return; }
+			// unenlarge target node
+			d3.select(this).attr('transform', '');
 
-      // unenlarge target node
-      d3.select(this).attr('transform', '');
+			// add transition to model
+			model.addTransition(mousedown_node.id, mouseup_node.id, currentEpistemicAgent);
+			onStateModified();
 
-      // add transition to model
-      model.addTransition(mousedown_node.id, mouseup_node.id, currentEpistemicAgent);
-      onStateModified();
+			// add link to graph (update if exists)
+			// note: links are strictly source < target; arrows separately specified by booleans
+			var source, target, direction;
+			if(mousedown_node.id < mouseup_node.id) {
+				source = mousedown_node;
+				target = mouseup_node;
+				direction = 'right';
+			} else {
+				source = mouseup_node;
+				target = mousedown_node;
+				direction = 'left';
+			}
 
-      // add link to graph (update if exists)
-      // note: links are strictly source < target; arrows separately specified by booleans
-      var source, target, direction;
-      if(mousedown_node.id < mouseup_node.id) {
-        source = mousedown_node;
-        target = mouseup_node;
-        direction = 'right';
-      } else {
-        source = mouseup_node;
-        target = mousedown_node;
-        direction = 'left';
-      }
+			var link = links.filter(function(l) {
+				return (l.source === source && l.target === target && l.agent === currentEpistemicAgent);
+			})[0];
 
-      var link = links.filter(function(l) {
-        return (l.source === source && l.target === target && l.agent === currentEpistemicAgent);
-      })[0];
+			if(link) {
+				link[direction] = true;
+			} else {
+				link = {source: source, target: target, left: false, right: false, agent: currentEpistemicAgent};
+				link[direction] = true;
+				links.push(link);
+			}
 
-      if(link) {
-        link[direction] = true;
-      } else {
-        link = {source: source, target: target, left: false, right: false, agent: currentEpistemicAgent};
-        link[direction] = true;
-        links.push(link);
-      }
+			// select new link
+			selected_link = link;
+			setSelectedNode(null);
+			restart();
+		});
 
-      // select new link
-      selected_link = link;
-      setSelectedNode(null);
-      restart();
-    });
+	// show node IDs
+	g.append('svg:text')
+		.attr('x', 0)
+		.attr('y', 4)
+		.attr('class', 'id')
+		.attr('fill', 'white')
+		.text(function(d) { return d.id; });
 
-  // show node IDs
-  g.append('svg:text')
-      .attr('x', 0)
-      .attr('y', 4)
-      .attr('class', 'id')
-      .attr('fill', 'white')
-      .text(function(d) { return d.id; });
+	// text shadow
+	g.append('svg:text')
+		.attr('x', 18)
+		.attr('y', 4)
+		.attr('class', 'shadow')
+		.text(makeAssignmentString);
 
-  // text shadow
-  g.append('svg:text')
-      .attr('x', 18)
-      .attr('y', 4)
-      .attr('class', 'shadow')
-      .text(makeAssignmentString);
+	// text foreground
+	g.append('svg:text')
+		.attr('x', 18)
+		.attr('y', 4)
+		.text(makeAssignmentString);
 
-  // text foreground
-  g.append('svg:text')
-      .attr('x', 18)
-      .attr('y', 4)
-      .text(makeAssignmentString);
+	// remove old nodes
+	circle.exit().remove();
 
-  // remove old nodes
-  circle.exit().remove();
-
-  // set the graph in motion
-  force.start();
+	// set the graph in motion
+	force.start();
 }
 
 // Set the reflexive, symmetric, and transitive checkboxes to the correct state whenever the model
@@ -763,6 +792,7 @@ function onStateModified() {
     `For agent${activeAgents.length === 1 ? '' : 's'} ${activeAgents.join()} :`;
   }
 }
+
 onStateModified();
 
 function mousedown() {
@@ -990,9 +1020,10 @@ function keyup() {
 var modeButtons = d3.selectAll('#mode-select button'),
     panes = d3.selectAll('#app-body .panel .tab-pane');
 
+
 function setAppMode(newMode) {
   // mode-specific settings
-  if(newMode === MODE.EDIT) {
+  if(newMode === MODE.EDIT ) {
     // enable listeners
     svg.classed('edit', true)
       .on('mousedown', mousedown)
@@ -1008,7 +1039,7 @@ function setAppMode(newMode) {
       .classed('true', false)
       .classed('false', false);
     currentFormula.classed('inactive', true);
-  } else if(newMode === MODE.EVAL) {
+  } else if(newMode === MODE.EVAL|| newMode === MODE.TEXT ) {
     // disable listeners (except for I-bar prevention)
     svg.classed('edit', false)
       .on('mousedown', function() { d3.event.preventDefault(); })
@@ -1047,8 +1078,8 @@ function setAppMode(newMode) {
     else d3.select(this).classed('active', true);
   });
   panes.each(function(d,i) {
-    if(i !== newMode) d3.select(this).classed('active', false);
-    else d3.select(this).classed('active', true);
+	  if(i !== newMode) d3.select(this).classed('active', false);
+	  else d3.select(this).classed('active', true);
   });
   appMode = newMode;
 
@@ -1068,7 +1099,6 @@ evalInput.select('input')
 
 // app starts here
 setAppMode(MODE.EDIT);
-
 setVarCount(varCount);
 
 if (formulaParam && formulaParam[1].length > 0) {
