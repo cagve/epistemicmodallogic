@@ -520,7 +520,6 @@ var MPL = (function (FormulaParser) {
 
 	  this.getDistributedRelations = function(agents){
 		  let allRel = this.getAllRelationsOfList(agents)
-		  console.log(allRel)
 		  const agentKeyMap = agents.reduce((acc, agent) => {
 			  acc[agent] = new Set(allRel.filter(item => item.agent === agent).map(item => `${item.source}-${item.target}`));
 			  return acc;
@@ -566,7 +565,6 @@ var MPL = (function (FormulaParser) {
 
 	  this.getDistributedPrimaModel = function(agents){
 		  let allRelations = this.getDistributedRelations(agents);
-		  console.log(allRelations)
 		  let modelprima = new Model();
 		  _states.forEach( state =>{
 			  if (state){ //if state
@@ -632,7 +630,7 @@ var MPL = (function (FormulaParser) {
 		let modelprima = model.getDistributedPrimaModel(agents)
 		console.log("[debug] url: "+modelprima.getModelString())
 		return agents.every(agent => modelprima.getSuccessorsOf(state).every(
-			(succ) =>succ.agent !== agent  || _truth(model, succ.target, json.common_start.group_end[1])
+			(succ) =>succ.agent !== agent  || _truth(model, succ.target, json.dist_start.group_end[1])
 		));
 	}
     else if (json.kno_start && json.kno_start.group_end && json.kno_start.group_end[0].prop) {
