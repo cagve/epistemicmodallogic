@@ -361,6 +361,14 @@ function getWffAgentsAndProps(json) {
     return getWffAgentsAndProps(json.nec);
   else if (json.poss)
     return getWffAgentsAndProps(json.poss);
+  else if (json.dist_start &&
+           json.dist_start.group_end &&
+           json.dist_start.group_end[0].prop &&
+           json.dist_start.group_end.length === 2
+  ) {
+    const agent = json.dist_start.group_end[0].prop;
+    return [{ agent }].concat(getWffAgentsAndProps(json.dist_start.group_end[1]));
+  }
   else if (json.common_start &&
            json.common_start.group_end &&
            json.common_start.group_end[0].prop &&
