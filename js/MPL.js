@@ -548,7 +548,9 @@ var MPL = (function (FormulaParser) {
 			  for (let i = 0; i < n; i++) {
 				  for (let j = 0; j < n; j++) {
 					  matrix[i][j] = matrix[i][j] || (matrix[i][k] && matrix[k][j]); 
-					  matrix[i][i] = 1;
+					  if (matrix[i].some(Boolean)) { //Aplicamos cierre reflexivo solo si existe alguna relacion y no es un mundo final
+						  matrix[i][i] = 1;
+					  }
 				  }
 			  }
 		  }
