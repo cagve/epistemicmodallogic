@@ -600,6 +600,13 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
       ',' + x2 + ' ' + y2;
 }
 
+function custom_graph(){
+	//update node in graph and state in model
+	circle.selectAll('text:not(.id)')
+    .text("Hello World");
+}
+
+
 // update graph (called when needed)
 function restart() {
 	// path (link) group
