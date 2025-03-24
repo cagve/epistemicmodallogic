@@ -348,19 +348,15 @@ function evaluateFormula() {
 		.classed('inactive', false);
 
 	subFormulas.forEach((subf, index) =>{
-		const radioContainer = currentSubFormula
-			.append("div")
-			.attr("id", 'radio-subformulae')
-
-		radioContainer.append("input")
-			.attr("type", "radio")
-			.attr("name", "subFormulaGroup") // mismo nombre para agrupar
+	currentSubFormula
+			.append("button")
+			.attr("name", "subFormulaGroup") 
 			.attr("id", `subFormulaRadio_${index}`)
-			.attr("value", index);
+			.html("$"+subf.latex()+"$")
+			.on("click", ()=> {
+				custom_graph(subf)
+			});
 
-		radioContainer.append("label")
-			.attr("for", `subFormulaRadio_${index}`)
-			.html("$"+subf.latex()+"$");
 	})
 
 	// display truth evaluation
@@ -600,10 +596,26 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
       ',' + x2 + ' ' + y2;
 }
 
-function custom_graph(){
-	//update node in graph and state in model
-	circle.selectAll('text:not(.id)')
-    .text("Hello World");
+function custom_graph(wff){
+	circle.selectAll('text:not(.id)').remove();
+	circle.selectAll('foreignObject').remove();
+	nodes.forEach(function(node, index) {
+		var id = node.id
+		truthVal = MPL.truth(model, id, wff);
+		console.log(wff.latex())
+		if (truthVal){
+			const circleSelection = d3.select(circle[0][index])
+            circleSelection.append('foreignObject')
+                .attr('width', 100)
+                .attr('height', 50)
+                .append('xhtml:div')
+                .each(function() {
+                    katex.render(wff.latex(), this, {
+                        throwOnError: false
+                    });
+                });
+		}
+	})
 }
 
 
