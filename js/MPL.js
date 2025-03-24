@@ -615,7 +615,6 @@ var MPL = (function (FormulaParser) {
    * @private
    */
   function _truth(model, state, json) {
-	console.log(subformulas(json));
     if (json.prop)
       return model.valuation(json.prop, state);
     else if (json.neg)
@@ -682,7 +681,7 @@ var MPL = (function (FormulaParser) {
 
   function subformulas(json, subs = []) {
 	  if (json.prop) {
-		  subs.push(json.prop);
+		  subs.push(json);
 	  } else if (json.neg){
 		  subs.push(json.neg);
 		  subformulas(json.neg, subs);
@@ -715,18 +714,18 @@ var MPL = (function (FormulaParser) {
 		  subs.push(json.equi[1]);
 		  subformulas(json.equi[0], subs);
 		  subformulas(json.equi[1], subs);
-	  } else {
-		  return "unknown";
-	  }
-	  return subs;
+	  } 
+	  // TODO: filtrar antes de añadir
+	  return [...new Set(subs)];
   }
 
 
   // export public methods
   return {
-    Wff: Wff,
-    Model: Model,
-    truth: truth
+	  Wff: Wff,
+	  Model: Model,
+	  truth: truth,
+	  subformulas: subformulas
   };
 
 })(FormulaParser);

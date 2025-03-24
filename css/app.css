@@ -145,6 +145,23 @@ table.propvars td.var-name {
   left: 320px;
 }
 
+#app-body .current-subformula {
+  position: absolute;
+  top: 0;
+  left: 500px;
+}
+
+#radio-subformulae {
+	margin: 8px 0;
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	transition: all 0.2s;
+	padding: 6px 10px;
+	border-radius: 6px;
+}
+
+
 #app-body .current-formula {
   position: absolute;
   top: 0;

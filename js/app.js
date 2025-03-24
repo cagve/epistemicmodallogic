@@ -7,6 +7,8 @@
  * Released under the MIT License.
  */
 
+// const { index } = require("d3");
+
 // app mode constants
 var MODE = {
 	EDIT: 0,
@@ -178,6 +180,7 @@ var varCountButtons = d3.selectAll('#edit-pane .var-count button'),
     evalInput = d3.select('#eval-pane .eval-input'),
     evalOutput = d3.select('#eval-pane .eval-output'),
     currentFormula = d3.select('#app-body .current-formula');
+    currentSubFormula = d3.select('#app-body .current-subformula');
 
 function announceFormula() {
   // make sure a formula has been input
@@ -266,86 +269,112 @@ function announceFormula() {
 }
 
 function evaluateFormula() {
-  // make sure a formula has been input
-  var formula = evalInput.select('input').node().value;
-  formula = formula.split(',').join(''); // remove commas for parsing
-  formula = formula.split('[').join('[(');
-  formula = formula.split(']').join(')]');
-  if(!formula) {
-    evalOutput
-      .html('<div class="alert">No formula!</div>')
-      .classed('inactive', false);
-    return;
-  }
+	// make sure a formula has been input
+	var formula = evalInput.select('input').node().value;
+	formula = formula.split(',').join(''); // remove commas for parsing
+	formula = formula.split('[').join('[(');
+		formula = formula.split(']').join(')]');
+	if(!formula) {
+		evalOutput
+			.html('<div class="alert">No formula!</div>')
+			.classed('inactive', false);
+		return;
+	}
 
-  // parse formula and catch bad input
-  var wff = null;
-  try {
-    wff = new MPL.Wff(formula);
-  } catch(e) {
-    evalOutput
-      .html('<div class="alert">Invalid formula!</div>')
-      .classed('inactive', false);
-    return;
-  }
+	// parse formula and catch bad input
+	var wff = null;
+	try {
+		wff = new MPL.Wff(formula);
+	} catch(e) {
+		evalOutput
+			.html('<div class="alert">Invalid formula!</div>')
+			.classed('inactive', false);
+		return;
+	}
 
-  // check formula for bad vars or agents
-  const propsAndAgentsInWff = getWffAgentsAndProps(wff.json());
-  for (const propOrAgent of propsAndAgentsInWff) {
-    if (propOrAgent.prop) {
-      if (!propvars.includes(propOrAgent.prop)) {
-        evalOutput
-          .html(`<div class="alert">Formula contains invalid propositional variable: <b>${propOrAgent.prop}</b></div>`)
-          .classed('inactive', false);
-        return;
-      };
-    }
-    if (propOrAgent.agent) {
-      const agents = propOrAgent.agent.split('');
-      for (const agent of agents) {
-        if (!epistemicAgents.includes(agent)) {
-          evalOutput
-            .html(`<div class="alert">Formula contains invalid agent: <b>${agent}</b></div>`)
-            .classed('inactive', false);
-          return;
-        }
-      }
-    }
-  }
-  onStateModified();
+	
+	let subsjson = MPL.subformulas(wff.json())
+	let subFormulas = subsjson.map(ff => new MPL.Wff(ff));
 
-  // evaluate formula at each state in model
-  var trueStates  = [],
-      falseStates = [];
-  nodes.forEach(function(node, index) {
-    var id = node.id,
-        truthVal = MPL.truth(model, id, wff);
+	// check formula for bad vars or agents
+	const propsAndAgentsInWff = getWffAgentsAndProps(wff.json());
+	for (const propOrAgent of propsAndAgentsInWff) {
+		if (propOrAgent.prop) {
+			if (!propvars.includes(propOrAgent.prop)) {
+				evalOutput
+					.html(`<div class="alert">Formula contains invalid propositional variable: <b>${propOrAgent.prop}</b></div>`)
+					.classed('inactive', false);
+				return;
+			};
+		}
+		if (propOrAgent.agent) {
+			const agents = propOrAgent.agent.split('');
+			for (const agent of agents) {
+				if (!epistemicAgents.includes(agent)) {
+					evalOutput
+						.html(`<div class="alert">Formula contains invalid agent: <b>${agent}</b></div>`)
+						.classed('inactive', false);
+					return;
+				}
+			}
+		}
+	}
+	onStateModified();
 
-    if(truthVal) trueStates.push(id);
-    else falseStates.push(id);
+	// evaluate formula at each state in model
+	var trueStates  = [],
+		falseStates = [];
+	nodes.forEach(function(node, index) {
+		var id = node.id,
+			truthVal = MPL.truth(model, id, wff);
 
-    d3.select(circle[0][index])
-      .classed('waiting', false)
-      .classed('true', truthVal)
-      .classed('false', !truthVal);
-  });
+		if(truthVal) trueStates.push(id);
+		else falseStates.push(id);
 
-  // display evaluated formula
-  currentFormula
-    .html('<strong>Current formula:</strong><br>$' + wff.latex() + '$')
-    .classed('inactive', false);
+		d3.select(circle[0][index])
+			.classed('waiting', false)
+			.classed('true', truthVal)
+			.classed('false', !truthVal);
+	});
 
-  // display truth evaluation
-  var latexTrue  =  trueStates.length ? '$w_{' +  trueStates.join('},$ $w_{') + '}$' : '$\\varnothing$',
-      latexFalse = falseStates.length ? '$w_{' + falseStates.join('},$ $w_{') + '}$' : '$\\varnothing$';
-  evalOutput
-    .html('<div class="alert alert-success"><strong>True:</strong><div><div>' + latexTrue + '</div></div></div>' +
-          '<div class="alert alert-danger"><strong>False:</strong><div><div>' + latexFalse + '</div></div></div>')
-    .classed('inactive', false);
+	// display evaluated formula
+	currentFormula
+		.html('<strong>Current formula:</strong><br>$' + wff.latex() + '$')
+		.classed('inactive', false);
+	
+	//display subformulas
+	currentSubFormula.selectAll("*").remove();
+	currentSubFormula
+		.classed('inactive', false);
 
-  // re-render LaTeX
-  MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentFormula.node()]);
-  MathJax.Hub.Queue(['Typeset', MathJax.Hub, evalOutput.node()]);
+	subFormulas.forEach((subf, index) =>{
+		const radioContainer = currentSubFormula
+			.append("div")
+			.attr("id", 'radio-subformulae')
+
+		radioContainer.append("input")
+			.attr("type", "radio")
+			.attr("name", "subFormulaGroup") // mismo nombre para agrupar
+			.attr("id", `subFormulaRadio_${index}`)
+			.attr("value", index);
+
+		radioContainer.append("label")
+			.attr("for", `subFormulaRadio_${index}`)
+			.html("$"+subf.latex()+"$");
+	})
+
+	// display truth evaluation
+	var latexTrue  =  trueStates.length ? '$w_{' +  trueStates.join('},$ $w_{') + '}$' : '$\\varnothing$',
+		latexFalse = falseStates.length ? '$w_{' + falseStates.join('},$ $w_{') + '}$' : '$\\varnothing$';
+	evalOutput
+		.html('<div class="alert alert-success"><strong>True:</strong><div><div>' + latexTrue + '</div></div></div>' +
+			'<div class="alert alert-danger"><strong>False:</strong><div><div>' + latexFalse + '</div></div></div>')
+		.classed('inactive', false);
+
+	// re-render LaTeX
+	MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentFormula.node()]);
+	MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentSubFormula.node()]);
+	MathJax.Hub.Queue(['Typeset', MathJax.Hub, evalOutput.node()]);
 }
 
 /**
@@ -1038,7 +1067,10 @@ function setAppMode(newMode) {
       .classed('waiting', false)
       .classed('true', false)
       .classed('false', false);
+
     currentFormula.classed('inactive', true);
+    currentSubFormula.classed('inactive', true);
+	currentSubFormula.selectAll("*").remove();
   } else if(newMode === MODE.EVAL|| newMode === MODE.TEXT ) {
     // disable listeners (except for I-bar prevention)
     svg.classed('edit', false)
