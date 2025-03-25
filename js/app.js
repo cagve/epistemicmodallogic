@@ -183,6 +183,7 @@ var varCountButtons = d3.selectAll('#edit-pane .var-count button'),
     evalOutput = d3.select('#eval-pane .eval-output'),
     currentFormula = d3.select('#app-body .current-formula');
     currentSubFormula = d3.select('#app-body .current-subformula');
+    btnSubformulae = d3.select('#btn-formulae');
 
 function announceFormula() {
   // make sure a formula has been input
@@ -345,14 +346,20 @@ function evaluateFormula() {
 		.classed('inactive', false);
 	
 	//display subformulas
-	currentSubFormula.selectAll("*").remove();
 	currentSubFormula
 		.classed('inactive', false);
-
-	subFormulas.forEach((subf, index) =>{
 	currentSubFormula
-			.append("button")
-			.attr("name", "subFormulaGroup") 
+		.append("button")
+		.attr("class", "btn btn-primary")
+		.attr("id", "btn-subformulae")
+		.html("Subformulas")
+	currentSubFormula
+		.append("div")
+		.attr("class", "dropdown-content")
+
+    let dropdownmenu = d3.select('.dropdown-content');
+	subFormulas.forEach((subf, index) =>{
+			dropdownmenu.append("a")
 			.attr("id", `subFormulaRadio_${index}`)
 			.html("$"+subf.latex()+"$")
 			.on("click", ()=> {
@@ -599,7 +606,8 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
 }
 
 function custom_graph(wff){
-	// circle.selectAll('text:not(.id)').remove();
+	const dropbtn = document.querySelector('#btn-subformulae');
+	dropbtn.textContent = "$"+wff.latex()+"$";
 	circle.selectAll('text:not(.id)').each(function(d, i) {
 		var id = d.id
 		truthVal = MPL.truth(model, id, wff);
@@ -609,7 +617,9 @@ function custom_graph(wff){
 			 d3.select(this).text("");
 		}
 	});
+	 MathJax.Hub.Queue(['Typeset', MathJax.Hub, dropbtn]);
 }
+
 
 
 // update graph (called when needed)

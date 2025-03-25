@@ -719,7 +719,7 @@ var MPL = (function (FormulaParser) {
 		  subformulas(json.equi[1], subs);
 	  } 
 	  // TODO: filtrar antes de añadir
-	  return [...new Set(subs)];
+	  return removeDuplicates(subs);
   }
 
 
@@ -733,5 +733,22 @@ var MPL = (function (FormulaParser) {
 
 })(FormulaParser);
 
+
+function removeDuplicates(arr) {
+  const uniqueItems = [];
+  const seen = new Set();
+
+  for (const item of arr) {
+    // Stringify for comparison (note: property order matters)
+    const key = JSON.stringify(item);
+    
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueItems.push(item);
+    }
+  }
+
+  return uniqueItems;
+}
 
 // module.exports = MPL; // [TEST]
