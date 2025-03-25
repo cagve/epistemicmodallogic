@@ -91,6 +91,8 @@ for (const source of nodes) {
 	}
 }
 
+
+
 // set up SVG for D3
 var width  = 640,
     height = 540,
@@ -597,25 +599,16 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
 }
 
 function custom_graph(wff){
-	circle.selectAll('text:not(.id)').remove();
-	circle.selectAll('foreignObject').remove();
-	nodes.forEach(function(node, index) {
-		var id = node.id
+	// circle.selectAll('text:not(.id)').remove();
+	circle.selectAll('text:not(.id)').each(function(d, i) {
+		var id = d.id
 		truthVal = MPL.truth(model, id, wff);
-		console.log(wff.latex())
-		if (truthVal){
-			const circleSelection = d3.select(circle[0][index])
-            circleSelection.append('foreignObject')
-                .attr('width', 100)
-                .attr('height', 50)
-                .append('xhtml:div')
-                .each(function() {
-                    katex.render(wff.latex(), this, {
-                        throwOnError: false
-                    });
-                });
+		if ( truthVal ){
+			 d3.select(this).text(wff.unicode());
+		}else{
+			 d3.select(this).text("");
 		}
-	})
+	});
 }
 
 

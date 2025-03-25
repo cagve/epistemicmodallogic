@@ -46,6 +46,7 @@ var MPL = (function (FormulaParser) {
     return MPLParser.parse(ascii);
   }
 
+	
   /**
    * Converts an MPL wff from JSON to ASCII.
    * @private
