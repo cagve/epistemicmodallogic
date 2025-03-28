@@ -206,6 +206,10 @@ path.link {
   stroke: turquoise;
   fill: turquoise;
 }
+.agent-g {
+  stroke: brown;
+  fill: brown;
+}
 
 svg.edit:not(.active):not(.ctrl) path.link {
   cursor: pointer;

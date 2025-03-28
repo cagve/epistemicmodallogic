@@ -25,20 +25,3 @@ document.getElementById('fileInput').addEventListener('change', function(event) 
     }
 });
 
-
-function removeDuplicates(arr) {
-  const uniqueItems = [];
-  const seen = new Set();
-
-  for (const item of arr) {
-    // Stringify for comparison (note: property order matters)
-    const key = JSON.stringify(item);
-    
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniqueItems.push(item);
-    }
-  }
-
-  return uniqueItems;
-}

@@ -568,6 +568,7 @@ var MPL = (function (FormulaParser) {
 	  }
 
 
+
 	  this.getDistributedPrimaModel = function(agents){
 		  let allRelations = this.getDistributedRelations(agents);
 		  let modelprima = new Model();
@@ -734,21 +735,5 @@ var MPL = (function (FormulaParser) {
 })(FormulaParser);
 
 
-function removeDuplicates(arr) {
-  const uniqueItems = [];
-  const seen = new Set();
-
-  for (const item of arr) {
-    // Stringify for comparison (note: property order matters)
-    const key = JSON.stringify(item);
-    
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniqueItems.push(item);
-    }
-  }
-
-  return uniqueItems;
-}
 
 // module.exports = MPL; // [TEST]
