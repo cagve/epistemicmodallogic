@@ -21,7 +21,7 @@ var MODE = {
 var propvars = ['p','q','r','s','t'],
     varCount = 2;
 
-let epistemicAgents = ['a', 'b', 'c', 'd', 'e', 'g'];
+let epistemicAgents = ['a', 'b', 'c', 'd', 'e', 'g', 'h'];
 let currentEpistemicAgent = 'a';
 
 const agentButtons = d3.selectAll('#edit-pane .agent-btns button');
@@ -369,7 +369,7 @@ function evaluateFormula() {
 			.attr("id", `subFormulaRadio_${index}`)
 			.html("$"+subf.latex()+"$")
 			.on("click", ()=> {
-				customGraph(subf)
+				subformulaeGraph(subf)
 			});
 
 	})
@@ -534,6 +534,7 @@ function tick() {
     if (d.agent === 'd') angle = -1;
     if (d.agent === 'e') angle = 1;
     if (d.agent === 'g') angle = -1.5;
+    if (d.agent === 'h') angle = 1.5;
 
     if (d.source === d.target) {
       let selfLoopOffset = [1, 0];
@@ -561,6 +562,7 @@ function tick() {
     if (d.agent === 'd') mul = -40;
     if (d.agent === 'e') mul = 40;
     if (d.agent === 'g') mul = -60;
+    if (d.agent === 'h') mul = 60;
 
     return getDoubleCurvedSVGPath([sourceX, sourceY], [targetX, targetY], mul);
   });
@@ -615,7 +617,7 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
 
 function printGraph(relations){
 	//remove groups links
-	links = links.filter(d => d.agent !== ('g'));
+	links = links.filter(d => d.agent !== ('g') && d.agent !== ('h'));
 	relations.forEach(rel => {
 		const sourceId = rel.source
 		const targetId = rel.target
@@ -624,7 +626,7 @@ function printGraph(relations){
 		const target = nodes.filter(function(node) { return node.id === targetId; })[0];
 
 		if(sourceId === targetId) {
-			links.push({source: source, target: source, left: true, right: true, agent: 'g' });
+			links.push({source: source, target: source, left: true, right: true, agent: rel.agent });
 			return;
 		}
 
@@ -653,7 +655,7 @@ function resetGraph(){
 	printGraph(rel);
 }
 
-function customGraph(wff){
+function subformulaeGraph(wff){
 	const dropbtn = document.querySelector('#btn-subformulae');
 	dropbtn.textContent = "$"+wff.latex()+"$";
 	circle.selectAll('text:not(.id)').each(function(d, i) {
@@ -675,6 +677,15 @@ function customGraph(wff){
 		commonRelations=removeDuplicates(commonRelations);
 		links = links.filter(d => !agents.includes(d.agent));
 		printGraph(commonRelations)
+	}else if (json.dist_start && json.dist_start.group_end && json.dist_start.group_end[0].prop) {
+		links = []
+		const agents = json.dist_start.group_end[0].prop.split('');
+		let distRelations = model.getDistributedRelations(agents)
+		distRelations = distRelations.map((rel) => {
+			return { ...rel, agent: 'h' };
+		});
+		distRelations=removeDuplicates(distRelations);
+		printGraph(distRelations)
 	
 	} else {
 		const relations = model.getAllRelationsOfList(epistemicAgents);
@@ -710,6 +721,7 @@ function restart() {
 		.classed('agent-d', function(d) { return d.agent === 'd'; })
 		.classed('agent-e', function(d) { return d.agent === 'e'; })
 		.classed('agent-g', function(d) { return d.agent === 'g'; })
+		.classed('agent-h', function(d) { return d.agent === 'h'; })
 		.style('marker-start', start)
 		.style('marker-end', end)
 		.style('marker-mid', mid);
@@ -724,6 +736,7 @@ function restart() {
 		.classed('agent-d', function(d) { return d.agent === 'd'; })
 		.classed('agent-e', function(d) { return d.agent === 'e'; })
 		.classed('agent-g', function(d) { return d.agent === 'g'; })
+		.classed('agent-h', function(d) { return d.agent === 'h'; })
 		.style('marker-start', start)
 		.style('marker-end', end)
 		.style('marker-mid', mid)
@@ -788,6 +801,7 @@ function restart() {
 				.classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
 				.classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
 				.classed('agent-g', function() { return currentEpistemicAgent === 'g'; })
+				.classed('agent-h', function() { return currentEpistemicAgent === 'h'; })
 				.attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'Q' + mousedown_node.x + ' ' + mousedown_node.y + ',' + mousedown_node.x + ' ' + mousedown_node.y)
 				.style('marker-mid', mid);
 
@@ -958,6 +972,7 @@ function mousemove() {
     .classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
     .classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
     .classed('agent-g', function() { return currentEpistemicAgent === 'g'; })
+    .classed('agent-h', function() { return currentEpistemicAgent === 'h'; })
     .style('marker-end', `url(#end-arrow-${currentEpistemicAgent})`)
     .style('marker-mid', mid);
 

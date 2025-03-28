@@ -684,8 +684,9 @@ var MPL = (function (FormulaParser) {
   }
 
   function subformulas(json, subs = []) {
+	  subs.push(json);
 	  if (json.prop) {
-		  subs.push(json);
+		  // subs.push(json);
 	  } else if (json.neg){
 		  subs.push(json.neg);
 		  subformulas(json.neg, subs);
