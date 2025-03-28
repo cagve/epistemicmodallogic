@@ -46,6 +46,7 @@ var MPL = (function (FormulaParser) {
     return MPLParser.parse(ascii);
   }
 
+	
   /**
    * Converts an MPL wff from JSON to ASCII.
    * @private
@@ -567,6 +568,7 @@ var MPL = (function (FormulaParser) {
 	  }
 
 
+
 	  this.getDistributedPrimaModel = function(agents){
 		  let allRelations = this.getDistributedRelations(agents);
 		  let modelprima = new Model();
@@ -682,8 +684,9 @@ var MPL = (function (FormulaParser) {
   }
 
   function subformulas(json, subs = []) {
+	  subs.push(json);
 	  if (json.prop) {
-		  subs.push(json);
+		  // subs.push(json);
 	  } else if (json.neg){
 		  subs.push(json.neg);
 		  subformulas(json.neg, subs);
@@ -718,7 +721,7 @@ var MPL = (function (FormulaParser) {
 		  subformulas(json.equi[1], subs);
 	  } 
 	  // TODO: filtrar antes de añadir
-	  return [...new Set(subs)];
+	  return removeDuplicates(subs);
   }
 
 
@@ -731,6 +734,7 @@ var MPL = (function (FormulaParser) {
   };
 
 })(FormulaParser);
+
 
 
 // module.exports = MPL; // [TEST]
