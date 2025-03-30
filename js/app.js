@@ -1,4 +1,4 @@
-/**
+/*	
  * Modal Logic Playground -- application code
  *
  * Dependencies: D3, MathJax, MPL
@@ -675,7 +675,9 @@ function subformulaeGraph(wff){
 			return { ...rel, agent: 'g' };
 		});
 		commonRelations=removeDuplicates(commonRelations);
-		links = links.filter(d => !agents.includes(d.agent));
+		// For showing other arrows.
+		//links = links.filter(d => !agents.includes(d.agent)); 
+		links = []
 		printGraph(commonRelations)
 	}else if (json.dist_start && json.dist_start.group_end && json.dist_start.group_end[0].prop) {
 		links = []
