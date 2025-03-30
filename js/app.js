@@ -114,6 +114,11 @@ var force = d3.layout.force()
     .charge(-800)
     .on('tick', tick);
 
+// Función para poner diferente texto para difernetes agentes en los links.
+function setLinkAgent(agent){
+	return agent;
+}
+
 for (const agent of epistemicAgents) {
   // define agent markers for graph links
   svg.append('svg:defs').append('svg:marker')
@@ -124,7 +129,7 @@ for (const agent of epistemicAgents) {
       .attr('markerHeight', 10)
       .attr('orient', 0)
     .append('svg:text')
-      .text(agent)
+      .text(setLinkAgent(agent))
       .classed('agent-text', true)
       .classed('agent-'+agent, true);
 
