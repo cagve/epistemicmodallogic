@@ -1,4 +1,4 @@
-/**
+/*	
  * Modal Logic Playground -- application code
  *
  * Dependencies: D3, MathJax, MPL
@@ -6,6 +6,8 @@
  * Copyright (c) 2013 Ross Kirsling
  * Released under the MIT License.
  */
+
+// const { index } = require("d3");
 
 // app mode constants
 var MODE = {
@@ -19,7 +21,7 @@ var MODE = {
 var propvars = ['p','q','r','s','t'],
     varCount = 2;
 
-let epistemicAgents = ['a', 'b', 'c', 'd', 'e'];
+let epistemicAgents = ['a', 'b', 'c', 'd', 'e', 'g', 'h'];
 let currentEpistemicAgent = 'a';
 
 const agentButtons = d3.selectAll('#edit-pane .agent-btns button');
@@ -37,6 +39,7 @@ model.loadFromModelString(modelString);
 var lastNodeId = -1,
 	nodes = [],
 	links = [];
+
 
 // --> nodes setup
 var states = model.getStates();
@@ -88,6 +91,8 @@ for (const source of nodes) {
 		}
 	}
 }
+
+
 
 // set up SVG for D3
 var width  = 640,
@@ -178,6 +183,8 @@ var varCountButtons = d3.selectAll('#edit-pane .var-count button'),
     evalInput = d3.select('#eval-pane .eval-input'),
     evalOutput = d3.select('#eval-pane .eval-output'),
     currentFormula = d3.select('#app-body .current-formula');
+    currentSubFormula = d3.select('#app-body .current-subformula');
+    btnSubformulae = d3.select('#btn-formulae');
 
 function announceFormula() {
   // make sure a formula has been input
@@ -266,86 +273,119 @@ function announceFormula() {
 }
 
 function evaluateFormula() {
-  // make sure a formula has been input
-  var formula = evalInput.select('input').node().value;
-  formula = formula.split(',').join(''); // remove commas for parsing
-  formula = formula.split('[').join('[(');
-  formula = formula.split(']').join(')]');
-  if(!formula) {
-    evalOutput
-      .html('<div class="alert">No formula!</div>')
-      .classed('inactive', false);
-    return;
-  }
+	resetGraph();
+	// make sure a formula has been input
+	var formula = evalInput.select('input').node().value;
+	formula = formula.split(',').join(''); // remove commas for parsing
+	formula = formula.split('[').join('[(');
+		formula = formula.split(']').join(')]');
+	if(!formula) {
+		evalOutput
+			.html('<div class="alert">No formula!</div>')
+			.classed('inactive', false);
+		return;
+	}
 
-  // parse formula and catch bad input
-  var wff = null;
-  try {
-    wff = new MPL.Wff(formula);
-  } catch(e) {
-    evalOutput
-      .html('<div class="alert">Invalid formula!</div>')
-      .classed('inactive', false);
-    return;
-  }
+	// parse formula and catch bad input
+	var wff = null;
+	try {
+		wff = new MPL.Wff(formula);
+	} catch(e) {
+		evalOutput
+			.html('<div class="alert">Invalid formula!</div>')
+			.classed('inactive', false);
+		return;
+	}
 
-  // check formula for bad vars or agents
-  const propsAndAgentsInWff = getWffAgentsAndProps(wff.json());
-  for (const propOrAgent of propsAndAgentsInWff) {
-    if (propOrAgent.prop) {
-      if (!propvars.includes(propOrAgent.prop)) {
-        evalOutput
-          .html(`<div class="alert">Formula contains invalid propositional variable: <b>${propOrAgent.prop}</b></div>`)
-          .classed('inactive', false);
-        return;
-      };
-    }
-    if (propOrAgent.agent) {
-      const agents = propOrAgent.agent.split('');
-      for (const agent of agents) {
-        if (!epistemicAgents.includes(agent)) {
-          evalOutput
-            .html(`<div class="alert">Formula contains invalid agent: <b>${agent}</b></div>`)
-            .classed('inactive', false);
-          return;
-        }
-      }
-    }
-  }
-  onStateModified();
+	
+	let subsjson = MPL.subformulas(wff.json())
+	let subFormulas = subsjson.map(ff => new MPL.Wff(ff));
 
-  // evaluate formula at each state in model
-  var trueStates  = [],
-      falseStates = [];
-  nodes.forEach(function(node, index) {
-    var id = node.id,
-        truthVal = MPL.truth(model, id, wff);
+	// check formula for bad vars or agents
+	const propsAndAgentsInWff = getWffAgentsAndProps(wff.json());
+	for (const propOrAgent of propsAndAgentsInWff) {
+		if (propOrAgent.prop) {
+			if (!propvars.includes(propOrAgent.prop)) {
+				evalOutput
+					.html(`<div class="alert">Formula contains invalid propositional variable: <b>${propOrAgent.prop}</b></div>`)
+					.classed('inactive', false);
+				return;
+			};
+		}
+		if (propOrAgent.agent) {
+			const agents = propOrAgent.agent.split('');
+			for (const agent of agents) {
+				if (!epistemicAgents.includes(agent)) {
+					evalOutput
+						.html(`<div class="alert">Formula contains invalid agent: <b>${agent}</b></div>`)
+						.classed('inactive', false);
+					return;
+				}
+			}
+		}
+	}
+	onStateModified();
 
-    if(truthVal) trueStates.push(id);
-    else falseStates.push(id);
+	// evaluate formula at each state in model
+	var trueStates  = [],
+		falseStates = [];
+	nodes.forEach(function(node, index) {
+		var id = node.id,
+			truthVal = MPL.truth(model, id, wff);
 
-    d3.select(circle[0][index])
-      .classed('waiting', false)
-      .classed('true', truthVal)
-      .classed('false', !truthVal);
-  });
+		if(truthVal) trueStates.push(id);
+		else falseStates.push(id);
 
-  // display evaluated formula
-  currentFormula
-    .html('<strong>Current formula:</strong><br>$' + wff.latex() + '$')
-    .classed('inactive', false);
+		d3.select(circle[0][index])
+			.classed('waiting', false)
+			.classed('true', truthVal)
+			.classed('false', !truthVal);
+	});
 
-  // display truth evaluation
-  var latexTrue  =  trueStates.length ? '$w_{' +  trueStates.join('},$ $w_{') + '}$' : '$\\varnothing$',
-      latexFalse = falseStates.length ? '$w_{' + falseStates.join('},$ $w_{') + '}$' : '$\\varnothing$';
-  evalOutput
-    .html('<div class="alert alert-success"><strong>True:</strong><div><div>' + latexTrue + '</div></div></div>' +
-          '<div class="alert alert-danger"><strong>False:</strong><div><div>' + latexFalse + '</div></div></div>')
-    .classed('inactive', false);
+	// display evaluated formula
+	currentFormula
+		.html('<strong>Current formula:</strong><br>$' + wff.latex() + '$')
+		.classed('inactive', false);
+	
+	currentSubFormula.selectAll("*").remove();
 
-  // re-render LaTeX
-  MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentFormula.node()]);
-  MathJax.Hub.Queue(['Typeset', MathJax.Hub, evalOutput.node()]);
+	//display subformulas
+	currentSubFormula
+		.classed('inactive', false);
+
+	currentSubFormula
+		.append("button")
+		.attr("class", "btn btn-primary")
+		.attr("id", "btn-subformulae")
+		.html("Subformulas")
+
+	currentSubFormula
+		.append("div")
+		.attr("class", "dropdown-content")
+
+    let dropdownmenu = d3.select('.dropdown-content');
+	subFormulas.forEach((subf, index) =>{
+			dropdownmenu.append("a")
+			.attr("id", `subFormulaRadio_${index}`)
+			.html("$"+subf.latex()+"$")
+			.on("click", ()=> {
+				subformulaeGraph(subf)
+			});
+
+	})
+
+	// display truth evaluation
+	var latexTrue  =  trueStates.length ? '$w_{' +  trueStates.join('},$ $w_{') + '}$' : '$\\varnothing$',
+		latexFalse = falseStates.length ? '$w_{' + falseStates.join('},$ $w_{') + '}$' : '$\\varnothing$';
+	evalOutput
+		.html('<div class="alert alert-success"><strong>True:</strong><div><div>' + latexTrue + '</div></div></div>' +
+			'<div class="alert alert-danger"><strong>False:</strong><div><div>' + latexFalse + '</div></div></div>')
+		.classed('inactive', false);
+
+	// re-render LaTeX
+	MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentFormula.node()]);
+	MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentSubFormula.node()]);
+	MathJax.Hub.Queue(['Typeset', MathJax.Hub, evalOutput.node()]);
 }
 
 /**
@@ -493,6 +533,8 @@ function tick() {
     if (d.agent === 'c') angle = 0.5;
     if (d.agent === 'd') angle = -1;
     if (d.agent === 'e') angle = 1;
+    if (d.agent === 'g') angle = -1.5;
+    if (d.agent === 'h') angle = 1.5;
 
     if (d.source === d.target) {
       let selfLoopOffset = [1, 0];
@@ -519,6 +561,8 @@ function tick() {
     if (d.agent === 'c') mul = 20;
     if (d.agent === 'd') mul = -40;
     if (d.agent === 'e') mul = 40;
+    if (d.agent === 'g') mul = -60;
+    if (d.agent === 'h') mul = 60;
 
     return getDoubleCurvedSVGPath([sourceX, sourceY], [targetX, targetY], mul);
   });
@@ -571,6 +615,91 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
       ',' + x2 + ' ' + y2;
 }
 
+function printGraph(relations){
+	//remove groups links
+	links = links.filter(d => d.agent !== ('g') && d.agent !== ('h'));
+	relations.forEach(rel => {
+		const sourceId = rel.source
+		const targetId = rel.target
+
+		const source = nodes.filter(function(node) { return node.id === sourceId; })[0];
+		const target = nodes.filter(function(node) { return node.id === targetId; })[0];
+
+		if(sourceId === targetId) {
+			links.push({source: source, target: source, left: true, right: true, agent: rel.agent });
+			return;
+		}
+
+		const link = links.filter(l => l.source === target && l.target === source && l.agent === rel.agent)[0];
+
+		if (link) {
+			if(sourceId < targetId) {
+				link.right = true;
+			} else {
+				link.left = true;
+			}
+		} else {
+			if(sourceId < targetId) {
+				links.push({source: source, target: target, left: false, right: true, agent: rel.agent });
+			} else {
+				links.push({source: target, target: source, left: true, right: false, agent: rel.agent });
+			}
+		}
+
+	})
+	restart();
+}
+
+function resetGraph(){
+	let rel = model.getAllRelationsOfList(epistemicAgents)
+	printGraph(rel);
+}
+
+function subformulaeGraph(wff){
+	const dropbtn = document.querySelector('#btn-subformulae');
+	dropbtn.textContent = "$"+wff.latex()+"$";
+	circle.selectAll('text:not(.id)').each(function(d, i) {
+		var id = d.id
+		truthVal = MPL.truth(model, id, wff);
+		if ( truthVal ){
+			 d3.select(this).text(wff.unicode());
+		}else{
+			 d3.select(this).text("");
+		}
+	});
+	const json = wff.json();
+	if (json.common_start && json.common_start.group_end && json.common_start.group_end[0].prop) {
+		const agents = json.common_start.group_end[0].prop.split('');
+		let commonRelations = model.getCommonRelations(agents)
+		commonRelations = commonRelations.map((rel) => {
+			return { ...rel, agent: 'g' };
+		});
+		commonRelations=removeDuplicates(commonRelations);
+		// For showing other arrows.
+		//links = links.filter(d => !agents.includes(d.agent)); 
+		links = []
+		printGraph(commonRelations)
+	}else if (json.dist_start && json.dist_start.group_end && json.dist_start.group_end[0].prop) {
+		links = []
+		const agents = json.dist_start.group_end[0].prop.split('');
+		let distRelations = model.getDistributedRelations(agents)
+		distRelations = distRelations.map((rel) => {
+			return { ...rel, agent: 'h' };
+		});
+		distRelations=removeDuplicates(distRelations);
+		printGraph(distRelations)
+	
+	} else {
+		const relations = model.getAllRelationsOfList(epistemicAgents);
+		printGraph(relations)
+	}
+	MathJax.Hub.Queue(['Typeset', MathJax.Hub, dropbtn]);
+}
+
+function hard_restart(){
+	restart()
+}
+
 // update graph (called when needed)
 function restart() {
 	// path (link) group
@@ -593,6 +722,8 @@ function restart() {
 		.classed('agent-c', function(d) { return d.agent === 'c'; })
 		.classed('agent-d', function(d) { return d.agent === 'd'; })
 		.classed('agent-e', function(d) { return d.agent === 'e'; })
+		.classed('agent-g', function(d) { return d.agent === 'g'; })
+		.classed('agent-h', function(d) { return d.agent === 'h'; })
 		.style('marker-start', start)
 		.style('marker-end', end)
 		.style('marker-mid', mid);
@@ -606,6 +737,8 @@ function restart() {
 		.classed('agent-c', function(d) { return d.agent === 'c'; })
 		.classed('agent-d', function(d) { return d.agent === 'd'; })
 		.classed('agent-e', function(d) { return d.agent === 'e'; })
+		.classed('agent-g', function(d) { return d.agent === 'g'; })
+		.classed('agent-h', function(d) { return d.agent === 'h'; })
 		.style('marker-start', start)
 		.style('marker-end', end)
 		.style('marker-mid', mid)
@@ -669,6 +802,8 @@ function restart() {
 				.classed('agent-c', function() { return currentEpistemicAgent === 'c'; })
 				.classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
 				.classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
+				.classed('agent-g', function() { return currentEpistemicAgent === 'g'; })
+				.classed('agent-h', function() { return currentEpistemicAgent === 'h'; })
 				.attr('d', 'M' + mousedown_node.x + ',' + mousedown_node.y + 'Q' + mousedown_node.x + ' ' + mousedown_node.y + ',' + mousedown_node.x + ' ' + mousedown_node.y)
 				.style('marker-mid', mid);
 
@@ -820,6 +955,7 @@ function mousedown() {
   restart();
 }
 
+
 function mousemove() {
   if(!mousedown_node) return;
 
@@ -837,6 +973,8 @@ function mousemove() {
     .classed('agent-c', function() { return currentEpistemicAgent === 'c'; })
     .classed('agent-d', function() { return currentEpistemicAgent === 'd'; })
     .classed('agent-e', function() { return currentEpistemicAgent === 'e'; })
+    .classed('agent-g', function() { return currentEpistemicAgent === 'g'; })
+    .classed('agent-h', function() { return currentEpistemicAgent === 'h'; })
     .style('marker-end', `url(#end-arrow-${currentEpistemicAgent})`)
     .style('marker-mid', mid);
 
@@ -1024,6 +1162,7 @@ var modeButtons = d3.selectAll('#mode-select button'),
 function setAppMode(newMode) {
   // mode-specific settings
   if(newMode === MODE.EDIT ) {
+	  resetGraph();
     // enable listeners
     svg.classed('edit', true)
       .on('mousedown', mousedown)
@@ -1038,7 +1177,10 @@ function setAppMode(newMode) {
       .classed('waiting', false)
       .classed('true', false)
       .classed('false', false);
+
     currentFormula.classed('inactive', true);
+    currentSubFormula.classed('inactive', true);
+	currentSubFormula.selectAll("*").remove();
   } else if(newMode === MODE.EVAL|| newMode === MODE.TEXT ) {
     // disable listeners (except for I-bar prevention)
     svg.classed('edit', false)

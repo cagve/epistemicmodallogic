@@ -22,8 +22,8 @@ var MPL = (function (FormulaParser) {
 	  { symbol: '<>', key: 'poss', precedence: 6 },
 	  { symbol: '[', key: 'annce_start', precedence: 5 },
 	  { symbol: 'K{', key: 'kno_start', precedence: 4 },
-	  { symbol: 'C{', key: 'common_start', precedence: 4 }, // [CA] Common knowledge operator
-	  { symbol: 'D{', key: 'dist_start', precedence: 4 } // [CA] Common knowledge operator
+	  { symbol: 'C{', key: 'common_start', precedence: 4 },
+	  { symbol: 'D{', key: 'dist_start', precedence: 4 } 
   ];
 
   var binaries = [
@@ -46,6 +46,7 @@ var MPL = (function (FormulaParser) {
     return MPLParser.parse(ascii);
   }
 
+	
   /**
    * Converts an MPL wff from JSON to ASCII.
    * @private
@@ -176,6 +177,7 @@ var MPL = (function (FormulaParser) {
     _latex   = _asciiToLaTeX(_ascii);
     _unicode = _asciiToUnicode(_ascii);
   }
+
 
   /**
    * Constructor for Kripke model. Takes no initial input.
@@ -565,6 +567,8 @@ var MPL = (function (FormulaParser) {
 		  return relations
 	  }
 
+
+
 	  this.getDistributedPrimaModel = function(agents){
 		  let allRelations = this.getDistributedRelations(agents);
 		  let modelprima = new Model();
@@ -679,14 +683,58 @@ var MPL = (function (FormulaParser) {
     return _truth(model, state, wff.json());
   }
 
+  function subformulas(json, subs = []) {
+	  subs.push(json);
+	  if (json.prop) {
+		  // subs.push(json);
+	  } else if (json.neg){
+		  subs.push(json.neg);
+		  subformulas(json.neg, subs);
+	  } else if (json.common_start && json.common_start.group_end && json.common_start.group_end[0].prop) {
+		  subs.push(json.common_start.group_end[1]);
+		  subformulas(json.common_start.group_end[1], subs);
+	  } else if (json.kno_start && json.kno_start.group_end && json.kno_start.group_end[0].prop) {
+		  subs.push(json.kno_start.group_end[1]);
+		  subformulas(json.kno_start.group_end[1], subs);
+	  } else if (json.dist_start && json.dist_start.group_end && json.dist_start.group_end[0].prop) {
+		  subs.push(json.dist_start.group_end[1]);
+		  subformulas(json.dist_start.group_end[1], subs);
+	  } else if (json.conj) {
+		  subs.push(json.conj[0]);
+		  subs.push(json.conj[1]);
+		  subformulas(json.conj[0], subs);
+		  subformulas(json.conj[1], subs);
+	  } else if (json.disj) {
+		  subs.push(json.disj[0]);
+		  subs.push(json.disj[1]);
+		  subformulas(json.disj[0], subs);
+		  subformulas(json.disj[1], subs);
+	  } else if (json.impl) {
+		  subs.push(json.impl[0]);
+		  subs.push(json.impl[1]);
+		  subformulas(json.impl[0], subs);
+		  subformulas(json.impl[1], subs);
+	  } else if (json.equi) {
+		  subs.push(json.equi[0]);
+		  subs.push(json.equi[1]);
+		  subformulas(json.equi[0], subs);
+		  subformulas(json.equi[1], subs);
+	  } 
+	  // TODO: filtrar antes de añadir
+	  return removeDuplicates(subs);
+  }
+
+
   // export public methods
   return {
-    Wff: Wff,
-    Model: Model,
-    truth: truth
+	  Wff: Wff,
+	  Model: Model,
+	  truth: truth,
+	  subformulas: subformulas
   };
 
 })(FormulaParser);
+
 
 
 // module.exports = MPL; // [TEST]

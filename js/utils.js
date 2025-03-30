@@ -24,3 +24,4 @@ document.getElementById('fileInput').addEventListener('change', function(event) 
         console.log("No se seleccionó ningún archivo.");
     }
 });
+
