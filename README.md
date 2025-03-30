@@ -7,6 +7,3 @@ The Epistemic Logic Playground is a graphical semantic calculator for Dynamic Ep
 
 See it in action at [epistemicmodallogic](https://cagve.github.io/epistemicmodallogic/?model=;AS?formula=)
 
-### Reusable code
-* The core part of the code is MPL.js, a library for parsing and evaluating well-formed formulas of modal propositional logic. See the API Reference [here](API-Reference.md).
-* I've also extracted the directed graph editing code so that it can be easily repurposed. You can find it [here](http://bl.ocks.org/rkirsling/5001347).
