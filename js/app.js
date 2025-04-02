@@ -538,8 +538,8 @@ function tick() {
     if (d.agent === 'c') angle = 0.5;
     if (d.agent === 'd') angle = -1;
     if (d.agent === 'e') angle = 1;
-    if (d.agent === 'g') angle = -1.5;
-    if (d.agent === 'h') angle = 1.5;
+    if (d.agent === 'g') angle = 0; // No necesita un angulo diferente porque elimina el resto de relaciones
+    if (d.agent === 'h') angle = 0; // No necesita un angulo diferente porque elimina el resto de relaciones
 
     if (d.source === d.target) {
       let selfLoopOffset = [1, 0];
@@ -566,8 +566,8 @@ function tick() {
     if (d.agent === 'c') mul = 20;
     if (d.agent === 'd') mul = -40;
     if (d.agent === 'e') mul = 40;
-    if (d.agent === 'g') mul = -60;
-    if (d.agent === 'h') mul = 60;
+    if (d.agent === 'g') mul = 0; // No necesita un angulo diferente porque elimina el resto de relaciones
+    if (d.agent === 'h') mul = 0; // No necesita un angulo diferente porque elimina el resto de relaciones
 
     return getDoubleCurvedSVGPath([sourceX, sourceY], [targetX, targetY], mul);
   });
