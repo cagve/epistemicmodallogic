@@ -1217,6 +1217,23 @@ function setAppMode(newMode) {
     // reset eval state
     circle.classed('waiting', true);
     evalOutput.classed('inactive', true);
+
+
+	// BUTTONS
+	  // const invertPropvars = propvars.slice(0,varCount).reverse()
+	  // var ezmode = document.getElementById('ezmode');
+	  // for (let i=0; i< varCount; i++){
+		 //  const a = document.createElement('button')
+		 //  let txt = invertPropvars[i]
+		 //  a.innerHTML = txt;
+		 //  a.setAttribute('class', "btn btn-small atom-button")
+		 //  a.setAttribute('id', "prop"+i)
+		 //  a.onclick = function(){
+			//   addText(txt, this)
+		 //  };
+		 //  ezmode.insertBefore(a, ezmode.firstChild)
+	  // }
+
   } else return;
 
   // switch button and panel states and set new mode

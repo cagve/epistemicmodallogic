@@ -7,7 +7,7 @@
  * Copyright (c) 2013-2015 Ross Kirsling
  * Released under the MIT License.
  */
-// const FormulaParser = require('../lib/formula-parser.min.js'); //[TEST]
+const FormulaParser = require('../lib/formula-parser.min.js'); //[TEST]
 var MPL = (function (FormulaParser) {
   'use strict';
 
@@ -737,4 +737,4 @@ var MPL = (function (FormulaParser) {
 
 
 
-// module.exports = MPL; // [TEST]
+module.exports = MPL; // [TEST]
