@@ -4,25 +4,23 @@ svg{
     margin: auto;
 }
 
+/* Nodes */
 .node circle{
     fill: #fff;
     stroke: steelblue;
     stroke-width: 3px;
 }
 
-.node text{ font: 12px sans-serif; }
+.node text{ 
+	font: 12px sans-serif;
+	background-color: #fff;
+}
 
+
+/* Links */
 .link{
     fill: none;
     stroke: #ccc;
     stroke-width: 2px;
 }
 
-.hidden{
-    stroke: rgba(0, 0, 0, 0.1);
-
-}
-.node.hidden{
-        fill: rgba(0, 0, 0, 0.1) !important;
-        stroke: rgba(0, 0, 0, 0.1);
-}

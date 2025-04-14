@@ -1,55 +1,56 @@
-document.addEventListener('DOMContentLoaded', function() {
-	// TABLEAU CREATION -- HARDCODE
-	const tableau = new Tableau('p&q');
-	tableau.addSingleExtension('p');
-	tableau.addSingleExtension('q');
-	const treeData = tableau.toD3();
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-	// Configuración del árbol
-	const margin = { top: 50, right: 120, bottom: 50, left: 120 };
-	const width = 1000 - margin.left - margin.right;
-	const height = 600 - margin.top - margin.bottom;
+const radius = 10;
 
-  // Crear SVG
-  const svg = d3.select("#tree-container").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
 
-	// Crear jerarquía
-	const root = d3.hierarchy(treeData);
+const tableau = new Tableau('~(p&q) & q');
+tableau.runTableau()
+const treeData = tableau.toD3();
 
-  // Configurar layout del árbol
-  const treeLayout = d3.tree().size([width, height]);
+// Configuración del árbol
+const margin = { top: 50, right: 120, bottom: 50, left: 120 };
+const width = 1000 - margin.left - margin.right;
+const height = 600 - margin.top - margin.bottom;
 
-  // Aplicar layout a los datos
-  treeLayout(root);
+// Crear SVG
+const svg = d3.select("#tree-container").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.append("g")
+	.attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // Dibujar enlaces
-  svg.selectAll(".link")
-    .data(root.links())
-    .enter().append("path")
-    .attr("class", "link")
-    .attr("d", d3.linkVertical()
-      .x(d => d.x)
-      .y(d => d.y));
+// Crear jerarquía
+const root = d3.hierarchy(treeData);
 
-  // Crear grupos de nodos
-  const node = svg.selectAll(".node")
-    .data(root.descendants())
-    .enter().append("g")
-    .attr("class", d => "node" + (d.children ? " node--internal" : " node--leaf"))
-    .attr("transform", d => `translate(${d.x},${d.y})`);
+// Configurar layout del árbol
+const treeLayout = d3.tree().size([width, height]);
 
-  // Añadir círculos a los nodos
-  node.append("circle")
-    .attr("r", d => Math.sqrt(d.value || 10) + 5); // Tamaño proporcional al valor
+// TREE LAYOUT
+treeLayout(root);
 
-  // Añadir texto a los nodos
-  node.append("text")
-    .attr("dy", ".35em")
-    .attr("y", d => d.children ? -20 : 20)
-    .style("text-anchor", "middle")
-    .text(d => d.data.value);
-});
+// LINKS
+svg.selectAll(".link")
+	.data(root.links())
+	.enter().append("path")
+	.attr("class", "link")
+	.attr("d", d3.linkVertical()
+		.x(d => d.x)
+		.y(d => d.y));
+
+// GROUP NODES
+const nodes = svg.selectAll(".node")
+	.data(root.descendants())
+	.enter().append("g")
+	.attr("transform", d => `translate(${d.x},${d.y})`) // Position
+	.attr("class", d => "node" + (d.children ? " node--internal" : " node--leaf"));
+
+nodes.append("circle")
+	.attr("r", radius); //tamaño
+
+// Añadir texto a los nodos
+nodes.append("text")
+	.attr("dy", ".35em")
+	.attr("x", radius+5)
+	.style("text-anchor", "right")
+	.text(d => d.data.value.ascii());
+
