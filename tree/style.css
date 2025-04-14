@@ -24,3 +24,82 @@ svg{
     stroke-width: 2px;
 }
 
+
+.close-leaf{
+    fill: Red;
+}
+
+.open-leaf{
+    fill: Green;
+}
+
+#app-body {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	width: 960px;
+	height: 540px;
+	position: relative;
+}
+
+#app-body .panel {
+	width: 300px;
+	height: 100%;
+	padding: 20px 19px 20px 20px;
+	background-color: #f5f5f5;
+	position: absolute;
+	left: 0;
+}
+
+#app-body .panel .tab-pane {
+	height: 100%;
+	position: relative;
+	overflow: hidden;
+}
+
+.eval-input {
+	margin-bottom: 15px;
+}
+
+.eval-input input {
+	width: 100%;
+	font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+	font-size: 12px;
+	border: none;
+	padding: 10px;
+	margin-bottom: 10px;
+}
+
+.eval-output .alert {
+	padding-right: 14px;
+	margin-bottom: 10px;
+}
+
+.eval-output .alert > div {
+	overflow-y: auto;
+	max-height: 56px;
+}
+
+.eval-output .alert > div > div {
+	overflow: hidden;
+}
+
+.eval-output .symbol {
+	width: 20px;
+	font-weight: bold;
+	display: inline-block;
+}
+
+.instructions {
+	position: absolute;
+	bottom: 0;
+	padding-top: 20px;
+	margin-top: 20px;
+}
+
+.instructions > ul {
+	margin-bottom: 0;
+}
+
+.instructions > ul > li:not(:last-child) {
+	margin-bottom: 8px;
+}

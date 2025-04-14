@@ -1,10 +1,13 @@
+// const MPL = require('../js/MPL.js'); // [TEST]
+
 class Node {
-	constructor(id,value, parent = null) {
+	constructor(id,value, label, parent = null) {
 		this.id = id;
 		this.parent = parent;
 		this.right = null;
 		this.left = null;
 		this.value = value;
+		this.label = label;
 	}
 	
 	isRoot(){
@@ -13,19 +16,19 @@ class Node {
 
 
 	//formula = MLP formula
-	addSingleChild(id, formula){
+	addSingleChild(id, formula, label = this.label){
 		if (this.left === null){
-			let node = new Node(id, formula, this)
+			let node = new Node(id, formula, label, this)
 			this.left = node
 			return node;
 		}else{
-			this.left.addSingleChild(id, formula)
+			this.left.addSingleChild(id, formula, label)
 		}
 	}
 
-	addTwoChildren(id1, formula1, id2, formula2){
-		const node1 = new Node(id1, formula1, this);
-		const node2 = new Node(id2, formula2, this);
+	addTwoChildren(id1, formula1, id2, formula2, label=this.label){
+		const node1 = new Node(id1, formula1, label, this);
+		const node2 = new Node(id2, formula2, label, this);
 		this.left = node1
 		this.right = node2
 		return [node1, node2]
@@ -37,9 +40,15 @@ class Node {
 			return "prop"
 		}else if(formula.conj){ 
 			return "conj"
+		}else if(formula.disj){ 
+			return "disj"
 		} else if(formula.neg){
-			if(formula.neg.conj){
+			if (formula.neg.know_start){
+				return "neg_know"
+			}else if(formula.neg.conj){
 				return "neg_conj"
+			}else if(formula.neg.disj){
+				return "neg_dij"
 			}else if(formula.neg.neg){
 				return "neg_neg"
 			}else if(formula.neg.prop){
@@ -56,9 +65,13 @@ class Node {
 			case "prop":
 				return "prop"
 			case "conj":
+			case "neg_disj":
 				return "alpha"
+			case "disj":
 			case "neg_conj":
 				return "beta"
+			case "neg_know":
+				return "pi"
 		}
 	}
 }
@@ -66,7 +79,7 @@ class Node {
 
 class Tableau {
 	constructor(formula) {
-		this.root = new Node(1,new MPL.Wff(formula), null);
+		this.root = new Node(1,new MPL.Wff(formula), '1');
 		this.alpha_group = []
 		this.beta_group = []
 		this.nu_group = []
@@ -101,13 +114,24 @@ class Tableau {
 		}else if(formula.conj){ 
 			const formula1 = new MPL.Wff(MPL._jsonToASCII(formula.conj[0]))
 			const formula2 = new MPL.Wff(MPL._jsonToASCII(formula.conj[1]))
-			this.addSingleExtension(formula1)
-			this.addSingleExtension(formula2)
+			this.addSingleExtension(formula1, node)
+			this.addSingleExtension(formula2, node)
+		}else if(formula.disj){ 
+			const formula1 = new MPL.Wff(MPL._jsonToASCII(formula.disj[0]))
+			const formula2 = new MPL.Wff(MPL._jsonToASCII(formula.disj[1]))
+			this.addDoubleExtension(formula1,formula2, node);
 		} else if(formula.neg){
-			if(formula.neg.conj){
+			if (formula.neg.know_start){
+				
+			}else if(formula.neg.conj){
 				const f1 = MPL.negateWff(formula.neg.conj[0]);
 				const f2 = MPL.negateWff(formula.neg.conj[1]);
-				this.addDoubleExtension(f1,f2);
+				this.addDoubleExtension(f1,f2, node);
+			}else if(formula.neg.disj){
+				const f1 = MPL.negateWff(formula.neg.disj[0]);
+				const f2 = MPL.negateWff(formula.neg.disj[1]);
+				this.addSingleExtension(f1, node)
+				this.addSingleExtension(f2, node)
 			}else if(formula.neg.neg){
 				console.log("Doble negacion")
 			}else if(formula.neg.prop){
@@ -118,21 +142,22 @@ class Tableau {
 		}
 	}
 
-	addSingleExtension(formula){
-		const leafs = this.getLeafs(this.root);
+	addSingleExtension(formula, node=this.root, label = node.label){
+		const leafs = this.getLeafs(node);
+		leafs.filter((leaf) => this.isLeafAvailable(leaf))
 		leafs.forEach(node => {
 			var newId = parseInt(node.id + '1');
-			const newNode = node.addSingleChild(newId, formula);
+			const newNode = node.addSingleChild(newId, formula, label);
 			this.addAvailableNode(newNode);
 		})
 	}
 
-	addDoubleExtension(formula1, formula2){
-		const leafs = this.getLeafs(this.root);
+	addDoubleExtension(formula1, formula2, node=this.root,label=node.label){
+		const leafs = this.getLeafs(node);
 		leafs.forEach(node => {
 			var newId1 = parseInt(node.id + '1');
 			var newId2 = parseInt(node.id + '2');
-			let [newNode1, newNode2] = node.addTwoChildren(newId1, formula1,  newId2, formula2);
+			let [newNode1, newNode2] = node.addTwoChildren(newId1, formula1,  newId2, formula2, label);
 			this.addAvailableNode(newNode1)
 			this.addAvailableNode(newNode2)
 		})
@@ -174,6 +199,12 @@ class Tableau {
 			case "beta":
 				this.beta_group.push(node)
 				break;
+			case "pi":
+				this.pi_group.push(node)
+				break;
+			case "nu":
+				this.nu_group.push(node)
+				break;
 			default:
 				return null;
 		}
@@ -202,6 +233,7 @@ class Tableau {
 			name: node.value.toString(),
 			id: node.id.toString(),
 			value: node.value,
+			label: node.label,
 			children: []
 		};
 		if (node.left) {
@@ -222,6 +254,10 @@ class Tableau {
 				console.log("Applying rule to ")
 				this.applyRule(node);
 			})
+			this.pi_group.forEach(node =>{
+				console.log("Applying rule to ")
+				this.applyRule(node);
+			})
 			this.beta_group.forEach(node =>{
 				console.log("New rule applied")
 				this.applyRule(node);
@@ -229,6 +265,26 @@ class Tableau {
 		}
 		console.log("No more rule to applied")
 	}
+
+	isClosed(){
+		const leafs =  this.getLeafs();
+		return leafs.some(leaf =>{
+			const branch = this.getBranchFromLeaf(leaf);
+			return branch.isClosed()
+		})
+	}
+
+	isLeafAvailable(leaf){
+		const branch = this.getBranchFromLeaf(leaf)
+		return !branch.isClosed();
+	}
+
+	getNodeFromLeafId(id){
+		const searchId = Number(id);
+		const leafs = this.getLeafs();
+		return leafs.filter(d => Number(d.id) === searchId)[0];
+	}
+
 }
 
 
@@ -240,8 +296,35 @@ class Branch {
 	addNode(node) {
 		this.nodes.push(node);
 	}
+
+	isClosed(){
+		return this.nodes.some((a, i) => 
+			this.nodes.slice(i + 1).some(b => {
+				var neg = MPL.negateWff(b.value.json()).ascii(); //fix this
+				var current = a.value.ascii();
+				return (neg === current);
+				}
+			)
+		);
+	}
+
+	getAllLabels(){
+		let labels = []
+		this.nodes.forEach(x=> labels.push(x.label));
+		labels = labels.filter((value, index, array) =>  //remove duplicates
+			array.indexOf(value) === index
+		)
+		return labels
+	}
 }
 
+
+// const tree = new Tableau('~(p&q) & (q&p)');
+// tree.runTableau()
+// const leafs =  tree.getLeafs();
+// const branch =  tree.getBranchFromLeaf(leafs[0]);
+// console.log(branch.getAllLabels())
+// console.log(tree.isClosed())
 
 
 window.Node = Node;

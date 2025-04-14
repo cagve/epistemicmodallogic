@@ -121,10 +121,21 @@ var MPL = (function (FormulaParser) {
   }
 
   function negateWff(json){
-	  const ascii = _jsonToASCII(json)
-	  const f = '~('+ascii+')'
-	  return new Wff(f)
+	  var simply = simplifyWff(json)
+	  var ascii = _jsonToASCII(simply)
+	  var f = '~('+ascii+')'
+	  var result = _jsonToASCII(simplifyWff(new Wff(f).json()))
+	  return new Wff(result)
   }
+
+ 	function simplifyWff(json){
+		if (json.neg){
+			if(json.neg.neg){
+				return json.neg.neg
+			}
+		}
+		return json
+	}
 
   /**
    * Converts an MPL wff from ASCII to Unicode.

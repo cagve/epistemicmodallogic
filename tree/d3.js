@@ -3,7 +3,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 const radius = 10;
 
 
-const tableau = new Tableau('~(p&q) & q');
+const tableau = new Tableau('p&(~q | ~p)');
 tableau.runTableau()
 const treeData = tableau.toD3();
 
@@ -41,8 +41,17 @@ svg.selectAll(".link")
 const nodes = svg.selectAll(".node")
 	.data(root.descendants())
 	.enter().append("g")
+	.attr("id", d => d.data.id) // Position
 	.attr("transform", d => `translate(${d.x},${d.y})`) // Position
-	.attr("class", d => "node" + (d.children ? " node--internal" : " node--leaf"));
+	.attr("class", d => "node" + (d.children ? " node--internal" : " node--leaf"))
+
+// COLOR NODES 
+const leafs = svg.selectAll('.node--leaf')
+	.attr("class", function(d) {
+		var node = tableau.getNodeFromLeafId(d.data.id);
+		let branch = tableau.getBranchFromLeaf(node);
+		return branch.isClosed() ? "close-leaf" : "open-leaf";
+	});
 
 nodes.append("circle")
 	.attr("r", radius); //tamaño
@@ -52,5 +61,5 @@ nodes.append("text")
 	.attr("dy", ".35em")
 	.attr("x", radius+5)
 	.style("text-anchor", "right")
-	.text(d => d.data.value.ascii());
+	.text(d =>  `${d.data.label}: ${d.data.value.unicode()}`);
 
