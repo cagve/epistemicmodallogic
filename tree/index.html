@@ -20,10 +20,19 @@
 	<script type="module" src="d3.js">
 	</script>
 	<body>	
-		<h1> Dynamic Epistemic Logic Playground(FORK) </h1>
-		<div class="container">
-			<h1>Árbol Binario con d3-hierarchy</h1>
-			<div id="tree-container"></div>
+		<h1>Tableau</h1>
+		<div id="app-body">
+			<div id="tab-content">
+				<div class="eval-input">
+					Enter a formula:
+					<!-- <input type="text" id="formulaInput" value="((p&q) & ~(p&q)) | ((p&q) & ~(p&q))"> -->
+					<input type="text" id="formulaInput" value="~(K{a}p)">
+								 <button class="btn btn-primary" id="run-button"> Evaluate </button>
+				</div>
+			</div>
+			<div id="tree-container">
+
+			</div>
 		</div>
 	</body>
 </html>

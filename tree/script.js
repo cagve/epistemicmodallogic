@@ -43,8 +43,8 @@ class Node {
 		}else if(formula.disj){ 
 			return "disj"
 		} else if(formula.neg){
-			if (formula.neg.know_start){
-				return "neg_know"
+			if (formula.neg.kno_start){
+				return "neg_kno"
 			}else if(formula.neg.conj){
 				return "neg_conj"
 			}else if(formula.neg.disj){
@@ -52,7 +52,7 @@ class Node {
 			}else if(formula.neg.neg){
 				return "neg_neg"
 			}else if(formula.neg.prop){
-				return "prop"
+				return "neg_prop"
 			}
 		}else{
 			return null
@@ -70,7 +70,7 @@ class Node {
 			case "disj":
 			case "neg_conj":
 				return "beta"
-			case "neg_know":
+			case "neg_kno":
 				return "pi"
 		}
 	}
@@ -79,7 +79,7 @@ class Node {
 
 class Tableau {
 	constructor(formula) {
-		this.root = new Node(1,new MPL.Wff(formula), '1');
+		this.root = new Node(1,new MPL.Wff(formula), new Label('1'));
 		this.alpha_group = []
 		this.beta_group = []
 		this.nu_group = []
@@ -121,8 +121,12 @@ class Tableau {
 			const formula2 = new MPL.Wff(MPL._jsonToASCII(formula.disj[1]))
 			this.addDoubleExtension(formula1,formula2, node);
 		} else if(formula.neg){
-			if (formula.neg.know_start){
-				
+			if (formula.neg.kno_start){
+				const agents = formula.neg.kno_start.group_end[0].prop.split('');
+		  		var term  = formula.neg.kno_start.group_end[1];
+				var newlabel = node.label.addExtension(agents,'2')
+				const formula1 = new MPL.Wff(MPL._jsonToASCII(term)) 
+				this.addSingleExtension(formula1, node, newlabel)
 			}else if(formula.neg.conj){
 				const f1 = MPL.negateWff(formula.neg.conj[0]);
 				const f2 = MPL.negateWff(formula.neg.conj[1]);
@@ -144,8 +148,11 @@ class Tableau {
 
 	addSingleExtension(formula, node=this.root, label = node.label){
 		const leafs = this.getLeafs(node);
-		leafs.filter((leaf) => this.isLeafAvailable(leaf))
 		leafs.forEach(node => {
+			var branch = this.getBranchFromLeaf(node)
+			if (branch.isClosed()){
+				return
+			}
 			var newId = parseInt(node.id + '1');
 			const newNode = node.addSingleChild(newId, formula, label);
 			this.addAvailableNode(newNode);
@@ -154,6 +161,7 @@ class Tableau {
 
 	addDoubleExtension(formula1, formula2, node=this.root,label=node.label){
 		const leafs = this.getLeafs(node);
+		leafs.filter((leaf) => this.isLeafAvailable(leaf))
 		leafs.forEach(node => {
 			var newId1 = parseInt(node.id + '1');
 			var newId2 = parseInt(node.id + '2');
@@ -217,6 +225,10 @@ class Tableau {
 				const idx_alpha = this.alpha_group.indexOf(node);
 				this.alpha_group.splice(idx_alpha, 1);
 				break;
+			case "pi":
+				const idx_pi = this.pi_group.indexOf(node);
+				this.pi_group.splice(idx_pi, 1);
+				break;
 			case "beta":
 				const index = this.beta_group.indexOf(node);
 				this.beta_group.splice(index, 1);
@@ -249,7 +261,7 @@ class Tableau {
 	}
 
 	runTableau(){
-		while (this.alpha_group.length > 0 || this.beta_group.length > 0){
+		while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0){
 			this.alpha_group.forEach(node =>{
 				console.log("Applying rule to ")
 				this.applyRule(node);
@@ -287,6 +299,28 @@ class Tableau {
 
 }
 
+class Label { 
+	constructor(labelStr){
+		this.value = this._parseLabel(labelStr); // Almacena el string directamente
+	}
+
+	_parseLabel(labelStr){
+		return labelStr.split('')
+	}	
+
+	addExtension(agent, number){
+		const newArray = [...this.value, agent, number];
+		return new Label(newArray.join(""));
+	}
+
+	toString(){
+		return this.value.join("")
+	}
+	equal(label2){
+		return this.toString() === label2.toString()
+	}
+
+}
 
 class Branch {
 	constructor() {
@@ -300,11 +334,19 @@ class Branch {
 	isClosed(){
 		return this.nodes.some((a, i) => 
 			this.nodes.slice(i + 1).some(b => {
-				var neg = MPL.negateWff(b.value.json()).ascii(); //fix this
-				var current = a.value.ascii();
-				return (neg === current);
-				}
-			)
+				const aLabel = a.label;
+				const bLabel = a.label;
+				const aType = a.typeOf();
+				const bType = b.typeOf();
+				if ( aLabel.equal(bLabel) &&
+					(aType === 'prop' || aType === 'neg_prop') && 
+					(bType === 'prop' || bType === 'neg_prop')) {
+					var neg = MPL.negateWff(b.value.json()).ascii(); 
+					var current = a.value.ascii();
+					return (neg === current);
+					}
+				return false
+			})
 		);
 	}
 
@@ -330,5 +372,6 @@ class Branch {
 window.Node = Node;
 window.Tableau = Tableau;
 window.Branch = Branch;
+window.Label = Label;
 
 
