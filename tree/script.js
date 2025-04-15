@@ -128,16 +128,16 @@ class Tableau {
 				const leafs = this.getLeafs(node);
 				leafs.forEach(leaf => {
 					const branch = this.getBranchFromLeaf(leaf);
+					let labels = branch.getAllLabels().map(x=>x.simplify())
+					console.log("LABELS: " + labels)
 					var count = 1
 					var newLabel = node.label.addExtension(agents,count.toString())
-					var flag = branch.isSup(newLabel);
-					while(flag){
-						console.log(count)
+					var flag = (labels.includes(newLabel.simplify()) || branch.isSup(newLabel))
+					while (flag){
 						count += 1
 						newLabel = node.label.addExtension(agents,count.toString())
 						flag = branch.isSup(newLabel);
 					}
-					console.log(newLabel.toString());
 					var newId = parseInt(node.id + '1');
 					let newNode = leaf.addSingleChild(newId,f1, newLabel)
 					this.addAvailableNode(newNode);
@@ -347,9 +347,10 @@ class Label {
 		return baseFormulas;
 	}
 
-	// 1a2b3a4 >> 1234
+	// 1a2b3a4 >> "1234"
 	simplify(){
-		return this.array.filter((_, index) => index % 2 !== 0);
+		const simplified = this.value.filter(elemento => !isNaN(Number(elemento)));
+		return simplified.join("")
 	}
 
 	lenght(){
@@ -370,11 +371,11 @@ class Branch {
 	isClosed(){
 		return this.nodes.some((a, i) => 
 			this.nodes.slice(i + 1).some(b => {
-				const aLabel = a.label;
-				const bLabel = a.label;
+				const aLabel = a.label.simplify();
+				const bLabel = b.label.simplify();
 				const aType = a.typeOf();
 				const bType = b.typeOf();
-				if ( aLabel.equal(bLabel) &&
+				if ( aLabel === bLabel &&
 					(aType === 'prop' || aType === 'neg_prop') && 
 					(bType === 'prop' || bType === 'neg_prop')) {
 					var neg = MPL.negateWff(b.value.json()).ascii(); 
