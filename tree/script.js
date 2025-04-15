@@ -124,9 +124,24 @@ class Tableau {
 			if (formula.neg.kno_start){
 				const agents = formula.neg.kno_start.group_end[0].prop.split('');
 		  		var term  = formula.neg.kno_start.group_end[1];
-				var newlabel = node.label.addExtension(agents,'2')
-				const formula1 = new MPL.Wff(MPL._jsonToASCII(term)) 
-				this.addSingleExtension(formula1, node, newlabel)
+				const f1 = MPL.negateWff(term);
+				const leafs = this.getLeafs(node);
+				leafs.forEach(leaf => {
+					const branch = this.getBranchFromLeaf(leaf);
+					var count = 1
+					var newLabel = node.label.addExtension(agents,count.toString())
+					var flag = branch.isSup(newLabel);
+					while(flag){
+						console.log(count)
+						count += 1
+						newLabel = node.label.addExtension(agents,count.toString())
+						flag = branch.isSup(newLabel);
+					}
+					console.log(newLabel.toString());
+					var newId = parseInt(node.id + '1');
+					let newNode = leaf.addSingleChild(newId,f1, newLabel)
+					this.addAvailableNode(newNode);
+				})
 			}else if(formula.neg.conj){
 				const f1 = MPL.negateWff(formula.neg.conj[0]);
 				const f2 = MPL.negateWff(formula.neg.conj[1]);
@@ -316,8 +331,29 @@ class Label {
 	toString(){
 		return this.value.join("")
 	}
+
 	equal(label2){
 		return this.toString() === label2.toString()
+	}
+
+	getBase(branch){
+		let baseFormulas = [];
+		branch.nodes.forEach(node => {
+			if (this.equal(node.label)){
+				baseFormulas.push(node.value)
+			}
+
+		})	
+		return baseFormulas;
+	}
+
+	// 1a2b3a4 >> 1234
+	simplify(){
+		return this.array.filter((_, index) => index % 2 !== 0);
+	}
+
+	lenght(){
+		return this.value.lenght;
 	}
 
 }
@@ -357,6 +393,15 @@ class Branch {
 			array.indexOf(value) === index
 		)
 		return labels
+	}
+
+	isSup(label){
+		const labelSet = this.getAllLabels()
+		var currentBase = label.getBase(this)
+		labelSet.some(labelPrima =>{
+			let basePrima = labelPrima.getBase(this);
+			return currentBase.every(element => basePrima.includes(element))
+		})
 	}
 }
 

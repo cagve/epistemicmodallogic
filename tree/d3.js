@@ -70,6 +70,7 @@ function run(){
 	const leafs = g.selectAll('.node--leaf')
 		.attr("class", function(d) {
 			var node = tableau.getNodeFromLeafId(d.data.id);
+			console.log(d.data)
 			let branch = tableau.getBranchFromLeaf(node);
 			return branch.isClosed() ? "close-leaf" : "open-leaf";
 		});
