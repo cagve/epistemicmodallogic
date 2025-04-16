@@ -28,14 +28,12 @@ function run(){
 	const container = d3.select("#tree-container");
 	const containerWidth = container.node().getBoundingClientRect().width;
 	const width = 1000 - margin.left - margin.right;
-	const height = 600 - margin.top - margin.bottom;
+	const height = 1000 - margin.top - margin.bottom;
 
 	// Crear SVG
 	const svg = d3.select("#tree-container").append("svg")
 		.attr("width", "100%")
 		.attr("height", height + margin.top + margin.bottom);
-	// .attr("width", width + margin.left + margin.right)
-	// .attr("height", height + margin.top + margin.bottom);
 
 	const g = svg.append("g")
 		.attr("transform", `translate(${margin.left},${margin.top})`);
@@ -70,7 +68,6 @@ function run(){
 	const leafs = g.selectAll('.node--leaf')
 		.attr("class", function(d) {
 			var node = tableau.getNodeFromLeafId(d.data.id);
-			console.log(d.data)
 			let branch = tableau.getBranchFromLeaf(node);
 			return branch.isClosed() ? "close-leaf" : "open-leaf";
 		});

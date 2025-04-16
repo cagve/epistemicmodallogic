@@ -40,15 +40,21 @@ class Node {
 			return "prop"
 		}else if(formula.conj){ 
 			return "conj"
+		}else if(formula.impl){ 
+			return "impl"
 		}else if(formula.disj){ 
 			return "disj"
+		}else if(formula.kno_start){ 
+			return "kno"
 		} else if(formula.neg){
-			if (formula.neg.kno_start){
+			if (formula.neg.impl){
+				return "neg_impl"
+			} else if (formula.neg.kno_start){
 				return "neg_kno"
 			}else if(formula.neg.conj){
 				return "neg_conj"
 			}else if(formula.neg.disj){
-				return "neg_dij"
+				return "neg_disj"
 			}else if(formula.neg.neg){
 				return "neg_neg"
 			}else if(formula.neg.prop){
@@ -65,13 +71,17 @@ class Node {
 			case "prop":
 				return "prop"
 			case "conj":
+			case "neg_impl":
 			case "neg_disj":
 				return "alpha"
+			case "impl":
 			case "disj":
 			case "neg_conj":
 				return "beta"
 			case "neg_kno":
 				return "pi"
+			case "kno":
+				return "nu"
 		}
 	}
 }
@@ -83,6 +93,7 @@ class Tableau {
 		this.alpha_group = []
 		this.beta_group = []
 		this.nu_group = []
+		this.nu_disable = []
 		this.pi_group = []
 		this.addAvailableNode(this.root)
 	}
@@ -116,10 +127,28 @@ class Tableau {
 			const formula2 = new MPL.Wff(MPL._jsonToASCII(formula.conj[1]))
 			this.addSingleExtension(formula1, node)
 			this.addSingleExtension(formula2, node)
+		}else if(formula.impl){ 
+			const formula1 = MPL.negateWff(formula.impl[0])
+			const formula2 = new MPL.Wff(MPL._jsonToASCII(formula.impl[1]))
+			this.addDoubleExtension(formula1,formula2, node);
 		}else if(formula.disj){ 
 			const formula1 = new MPL.Wff(MPL._jsonToASCII(formula.disj[0]))
 			const formula2 = new MPL.Wff(MPL._jsonToASCII(formula.disj[1]))
 			this.addDoubleExtension(formula1,formula2, node);
+		}else if(formula.kno_start){ 
+			console.log("Starting knowing")
+			const leafs = this.getLeafs(node);
+			var term  = new MPL.Wff(MPL._jsonToASCII(formula.kno_start.group_end[1]));
+			leafs.forEach(leaf => {
+				const branch = this.getBranchFromLeaf(leaf)
+				const exts = branch.getSimpleExtensions(node.label)
+				exts.forEach(newLabel =>{
+					var newId = parseInt(node.id + '1');
+					leaf.addSingleChild(newId,term,newLabel);
+					this.updateNuGroup(this.root);
+				})
+			});
+			console.log("Ending knowing")
 		} else if(formula.neg){
 			if (formula.neg.kno_start){
 				const agents = formula.neg.kno_start.group_end[0].prop.split('');
@@ -129,18 +158,18 @@ class Tableau {
 				leafs.forEach(leaf => {
 					const branch = this.getBranchFromLeaf(leaf);
 					let labels = branch.getAllLabels().map(x=>x.simplify())
-					console.log("LABELS: " + labels)
 					var count = 1
 					var newLabel = node.label.addExtension(agents,count.toString())
-					var flag = (labels.includes(newLabel.simplify()) || branch.isSup(newLabel))
+					var flag = (labels.includes(newLabel.simplify()) || branch.isSuplerflous(newLabel))
 					while (flag){
 						count += 1
 						newLabel = node.label.addExtension(agents,count.toString())
-						flag = branch.isSup(newLabel);
+						flag = branch.isSuplerflous(newLabel);
 					}
 					var newId = parseInt(node.id + '1');
 					let newNode = leaf.addSingleChild(newId,f1, newLabel)
 					this.addAvailableNode(newNode);
+					this.updateNuGroup(this.root);
 				})
 			}else if(formula.neg.conj){
 				const f1 = MPL.negateWff(formula.neg.conj[0]);
@@ -149,6 +178,11 @@ class Tableau {
 			}else if(formula.neg.disj){
 				const f1 = MPL.negateWff(formula.neg.disj[0]);
 				const f2 = MPL.negateWff(formula.neg.disj[1]);
+				this.addSingleExtension(f1, node)
+				this.addSingleExtension(f2, node)
+			}else if(formula.neg.impl){
+				const f1 = new MPL.Wff(MPL._jsonToASCII(formula.neg.impl[0]));
+				const f2 = MPL.negateWff(formula.neg.impl[1]);
 				this.addSingleExtension(f1, node)
 				this.addSingleExtension(f2, node)
 			}else if(formula.neg.neg){
@@ -172,6 +206,7 @@ class Tableau {
 			const newNode = node.addSingleChild(newId, formula, label);
 			this.addAvailableNode(newNode);
 		})
+		this.updateNuGroup(this.root); 
 	}
 
 	addDoubleExtension(formula1, formula2, node=this.root,label=node.label){
@@ -184,6 +219,7 @@ class Tableau {
 			this.addAvailableNode(newNode1)
 			this.addAvailableNode(newNode2)
 		})
+		this.updateNuGroup(this.root); 
 	}
 	
 
@@ -194,6 +230,16 @@ class Tableau {
 		console.log(node.value + ", ")
 		this.preOrderTraversal(node.left);
 		this.preOrderTraversal(node.right);
+	}
+
+	getBranchesFromNode(node){
+		let branches = [];
+		if (node.left === null) {
+			return [this.getBranchFromLeaf(node)]; //devuelve un array con un unico elemento
+		}
+		let leafs = this.getLeafs(node);
+		leafs.forEach( x =>branches.push(this.getBranchFromLeaf(x)));
+		return branches
 	}
 
 	getBranchFromLeaf(leafNode) {
@@ -225,9 +271,6 @@ class Tableau {
 			case "pi":
 				this.pi_group.push(node)
 				break;
-			case "nu":
-				this.nu_group.push(node)
-				break;
 			default:
 				return null;
 		}
@@ -237,16 +280,13 @@ class Tableau {
 		const type = node.typeOfRule()
 		switch (type){
 			case "alpha":
-				const idx_alpha = this.alpha_group.indexOf(node);
-				this.alpha_group.splice(idx_alpha, 1);
+				this.alpha_group = this.alpha_group.filter(item => item !== node)
 				break;
 			case "pi":
-				const idx_pi = this.pi_group.indexOf(node);
-				this.pi_group.splice(idx_pi, 1);
+				this.pi_group = this.pi_group.filter(item => item !== node)
 				break;
 			case "beta":
-				const index = this.beta_group.indexOf(node);
-				this.beta_group.splice(index, 1);
+				this.beta_group = this.beta_group.filter(item => item !== node)
 				break;
 			default:
 				return null
@@ -275,23 +315,71 @@ class Tableau {
 		return d3Node;
 	}
 
-	runTableau(){
-		while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0){
-			this.alpha_group.forEach(node =>{
-				console.log("Applying rule to ")
-				this.applyRule(node);
-			})
-			this.pi_group.forEach(node =>{
-				console.log("Applying rule to ")
-				this.applyRule(node);
-			})
-			this.beta_group.forEach(node =>{
-				console.log("New rule applied")
-				this.applyRule(node);
+	updateNuGroup(node){
+		if (!node) return;
+		if (node.typeOf() === 'kno'){
+			const formula = node.value.json();
+			const agents = formula.kno_start.group_end[0].prop.split('');
+			var termascii  = MPL._jsonToASCII(formula.kno_start.group_end[1]);
+			let branches = this.getBranchesFromNode(node);
+			let label = node.label;
+			branches.forEach(branch => {
+				let exts = branch.getSimpleExtensions(label);
+				if (exts.length === 0){
+					this.nu_group = this.nu_group.filter(item => item !== node)
+				}else{
+					exts.forEach(extLabel =>{
+						let base = extLabel.getBase(branch);
+						let ascii = base.map((x) => x.ascii())
+						const agentLabel = extLabel.value[extLabel.value.length - 2]
+						if (!ascii.includes(termascii) && agents.includes(agentLabel)){
+							if (!this.nu_group.some(prevnode => prevnode.id === node.id)){
+								this.nu_group.push(node);
+							}
+						}else{
+							this.nu_group = this.nu_group.filter(item => item !== node)
+						}
+					})
+				}
 			})
 		}
-		console.log("No more rule to applied")
+		this.updateNuGroup(node.left);  
+		this.updateNuGroup(node.right); 
 	}
+
+	runTableau(){
+		// while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0 || this.nu_group.length > 0 ){
+		while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0 || this.nu_group.length >0 ){
+			let leafs = this.getLeafs();
+			let leafsAva = leafs.filter((leaf) => this.isLeafAvailable(leaf));
+			if (leafsAva.length == 0){
+				console.log("NO more leafs open")
+				break;
+			}else if(this.alpha_group.length > 0 ){
+				this.alpha_group.forEach(node =>{
+					console.log("Applying alpha rule to node("+ node.id+ "): "+node.value.unicode())
+					this.applyRule(node);
+				})
+			}else if(this.beta_group.length > 0 ){
+				this.beta_group.forEach(node =>{
+					console.log("Applying beta rule to node: "+ node.id+ " phi= "+node.value.unicode())
+					this.applyRule(node);
+				})
+			}else if(this.nu_group.length > 0 ){
+				this.nu_group.forEach(node =>{
+					console.log("Applying nu rule to node: "+ node.id+ " phi= "+node.value.unicode())
+					this.applyRule(node);
+				})
+			}else if(this.pi_group.length > 0 ){
+				this.pi_group.forEach(node =>{
+					console.log("Applying pi rule to node: "+ node.id+ " phi= "+node.value.unicode())
+					this.applyRule(node);
+				})
+			}
+		}
+		console.log("Tableau ended")
+	}
+
 
 	isClosed(){
 		const leafs =  this.getLeafs();
@@ -357,6 +445,28 @@ class Label {
 		return this.value.lenght;
 	}
 
+
+	isSublabel(label){
+		let l1 = this
+		let l2 = label
+		let l1simp = l1.simplify()
+		let l2simp = l2.simplify()
+		if (label.simplify().length <=this.simplify().length){
+			return false
+		}else{
+			let sub = l2simp.substring(0,l1simp.length);
+			return sub === l1simp;
+		}
+	}
+
+
+	isSimpleExtension(label){
+		let l1 = label
+		let l2 = this
+		let l1simp = l1.simplify()
+		let l2simp = l2.simplify()
+		return l1simp.length+1 === l2simp.length  && l1.isSublabel(l2);
+	}
 }
 
 class Branch {
@@ -396,13 +506,25 @@ class Branch {
 		return labels
 	}
 
-	isSup(label){
+	isSuplerflous(label){
 		const labelSet = this.getAllLabels()
 		var currentBase = label.getBase(this)
 		labelSet.some(labelPrima =>{
 			let basePrima = labelPrima.getBase(this);
 			return currentBase.every(element => basePrima.includes(element))
 		})
+	}
+
+	getSimpleExtensions(label){
+		const labelSet = this.getAllLabels();
+		const filtered = labelSet.filter((x) => x.isSimpleExtension(label))
+		return filtered;
+	}
+
+	getSimpleExtensionsAgent(label, agent){
+		const labelSet = this.getAllLabels();
+		const filtered = labelSet.filter((x) => x.isSimpleExtension(label))
+		return filtered;
 	}
 }
 

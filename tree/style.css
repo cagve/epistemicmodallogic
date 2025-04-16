@@ -4,6 +4,10 @@ svg{
     margin: auto;
 }
 
+
+.node {
+	pointer
+}
 /* Nodes */
 .node circle{
     fill: #fff;
@@ -65,3 +69,6 @@ svg{
 	height:100%;
 }
 
+.selectedNode circle{
+	fill:gray;
+}
