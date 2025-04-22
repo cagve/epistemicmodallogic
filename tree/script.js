@@ -88,15 +88,21 @@ class Node {
 
 
 class Tableau {
-	constructor(formula) {
-		this.root = new Node(1,new MPL.Wff(formula), new Label('1'));
-		this.alpha_group = []
-		this.beta_group = []
-		this.nu_group = []
-		this.nu_disable = []
-		this.pi_group = []
-		this.logs = [];
-		this.addAvailableNode(this.root)
+	constructor(data) {
+		if (typeof data === 'string') {
+			// Si formula es un string, usamos MPL.Wff
+			this.root = new Node(1, new MPL.Wff(data), new Label('1'));
+		} else {
+			// Si formula no es un string, directamente la pasamos o la procesamos como corresponda
+			this.root = this.fromD3(data)
+		}
+			this.alpha_group = []
+			this.beta_group = []
+			this.nu_group = []
+			this.nu_disable = []
+			this.pi_group = []
+			this.logs = [];
+			this.addAvailableNode(this.root)
 	}
 
 	fromD3(data, parentNode = null) {
@@ -113,7 +119,7 @@ class Tableau {
 			} else if (data.children.length === 2) {
 				const leftChild = this.fromD3(data.children[0], node);
 				const rightChild = this.fromD3(data.children[1], node);
-				node.addTwoChildren(leftChild, rightChild);
+				node.addTwoChildren(leftChild.id, leftChild.value, rightChild.id, rightChild.value);
 			}
 		}
 		return node;

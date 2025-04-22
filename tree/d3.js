@@ -37,13 +37,13 @@ function displayLogsInHTML(logger) {
     });
 }
 
-function run() {
+function run(tableau) {
 	// Obtener fórmula desde el input
-	var formula = document.getElementById('formulaInput').value;
+	// var formula = document.getElementById('formulaInput').value;
 
 	// Crear nuevo Tableau y generar datos
-	const tableau = new Tableau(formula);
-	const logger = tableau.runTableau();
+	// const tableau = new Tableau(formula);
+	// const logger = tableau.runTableau();
 	const treeData = tableau.toD3();
 
 	// Resetear variables globales si es necesario
@@ -255,9 +255,10 @@ function click(d)
     // }
 	console.log("DEBUG CLICK")
 	let node = treeTOD3(root);
-	let newTableau = new Tableau('p');
-	let newRoot = newTableau.fromD3(node);
-	console.log(newRoot)
+	let newTableau1 = new Tableau('p');
+	run(newTableau1)
+	let newTableau2 = new Tableau(node);
+	run(newTableau2)
     update(d);
 }
 
