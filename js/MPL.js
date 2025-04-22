@@ -123,7 +123,10 @@ var MPL = (function (FormulaParser) {
 
   function negateWff(json){
 	  const ascii = _jsonToASCII(json)
-	  const f = '~('+ascii+')'
+	  var f = '~('+ascii+')'
+	  if (json.neg){
+		  f = '('+ascii+')'
+	  }
 	  return new Wff(f)
   }
 
