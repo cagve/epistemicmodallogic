@@ -158,6 +158,12 @@ class Tableau {
 		var node = data;
 		if (typeof data === "string"){
 			node = this.getNodeFromId(this.root, data)
+			console.log(this.alpha_group)
+			console.log(this.beta_group)
+			if (!this.beta_group.some(x => x.id === node.id)){
+				console.log("NO APLICAR")
+				return
+			}
 		}
 		this.removeAvailableNode(node)
 		const formula = node.value.json();
@@ -351,7 +357,6 @@ class Tableau {
 			default:
 				return null
 		}
-		console.log(this.beta_group)
 	}
 
 	toD3(node = this.root){
@@ -467,7 +472,7 @@ class Tableau {
 
 	getNodeFromId(node, id) {
 		if (node === null) return null;
-		if (node.id === id) {
+		if (node.id === Number(id)) {
 			return node;
 		}
 		const leftResult = this.getNodeFromId(node.left, id);

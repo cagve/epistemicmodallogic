@@ -18,14 +18,16 @@ let i = 0;
 let root;
 let columnAttribute = [];
 let svg, tree, diagonal;
+let currentTableau = null;
 
 function run() {
 	const formula = document.getElementById('formulaInput').value;
 	const tableau = new Tableau(formula);
-	const logger = tableau.runTableau();
+	// const logger = tableau.runTableau();
+	// displayLogsInHTML(logger);
 	const treeData = tableau.toD3();
+	currentTableau = tableau;
 
-	displayLogsInHTML(logger);
 
 	columnAttribute = [];
 	i = 0;
@@ -43,7 +45,11 @@ function run() {
 		.x(d => d.x)
 		.y(d => d.y);
 
-	root = d3.hierarchy(treeData);
+	// root = d3.hierarchy(treeData);
+	root = d3.hierarchy(treeData, (d) => d.children);
+	root.each(function(d) {
+		d.id = d.data.id || d.id;  // Aseguramos que los IDs no se sobrescriban
+	});
 	root.x0 = width / 2;
 	root.y0 = 0;
 
@@ -158,7 +164,21 @@ function dblClick(event, d) {
 
 function rclick(event, d) {
 	event.preventDefault();
-	console.log("RCLICK debug");
+	console.log("RCLICK on node:", d);
+	if (currentTableau) {
+		console.log(currentTableau.alpha_group)
+		console.log(currentTableau.beta_group)
+		console.log(`Applying rule on node ID: ${d.id}`);
+		currentTableau.applyRule(d.id);
+		const newTreeData = currentTableau.toD3();
+		root = d3.hierarchy(newTreeData, (d) => d.children);
+		root.each(function(d) {
+			d.id = d.data.id || d.id;  // Aseguramos que los IDs no se sobrescriban
+		});
+		root.x0 = width / 2;
+		root.y0 = 0;
+		update(root);
+	}
 }
 
 function getVisibleDepth(node, depth = 0) {
