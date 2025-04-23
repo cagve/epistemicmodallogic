@@ -115,11 +115,12 @@ class Tableau {
 		if (data.children && data.children.length > 0) {
 			if (data.children.length === 1) {
 				const child = this.fromD3(data.children[0], node);
-				node.addSingleChild(child.id, child.value, child.label);
+				node.left = child;
 			} else if (data.children.length === 2) {
 				const leftChild = this.fromD3(data.children[0], node);
 				const rightChild = this.fromD3(data.children[1], node);
-				node.addTwoChildren(leftChild.id, leftChild.value, rightChild.id, rightChild.value);
+				node.left = leftChild;
+				node.right = rightChild;
 			}
 		}
 		return node;
@@ -153,7 +154,11 @@ class Tableau {
 		return leafs;
 	}
 	
-	applyRule(node){
+	applyRule(data){
+		var node = data;
+		if (typeof data === "string"){
+			node = this.getNodeFromId(this.root, data)
+		}
 		this.removeAvailableNode(node)
 		const formula = node.value.json();
 		if (formula.prop){
@@ -346,6 +351,7 @@ class Tableau {
 			default:
 				return null
 		}
+		console.log(this.beta_group)
 	}
 
 	toD3(node = this.root){
@@ -457,6 +463,18 @@ class Tableau {
 		const searchId = Number(id);
 		const leafs = this.getLeafs();
 		return leafs.filter(d => Number(d.id) === searchId)[0];
+	}
+
+	getNodeFromId(node, id) {
+		if (node === null) return null;
+		if (node.id === id) {
+			return node;
+		}
+		const leftResult = this.getNodeFromId(node.left, id);
+		if (leftResult) return leftResult;
+
+		// Search right subtree
+		return this.getNodeFromId(node.right, id);
 	}
 
 }
