@@ -180,7 +180,6 @@ class Tableau {
 			const formula2 = new MPL.Wff(MPL._jsonToASCII(formula.disj[1]))
 			this.addDoubleExtension(formula1,formula2, node);
 		}else if(formula.kno_start){  
-			console.log("Starting knowing") 
 			const formula1 = new MPL.Wff(MPL._jsonToASCII(formula))
 			var term  = new MPL.Wff(MPL._jsonToASCII(formula.kno_start.group_end[1]));
 			let n = this.addSingleExtension(term, node)
@@ -188,9 +187,7 @@ class Tableau {
 			leafs.forEach(leaf => {
 				const branch = this.getBranchFromLeaf(leaf)
 				const exts = branch.getSimpleExtensions(node.label)
-				console.log(exts)
 				if (exts.length === 0){
-					console.log("NO EXTENSION BRO")
 					return 
 				}
 				exts.forEach(newLabel =>{
@@ -205,7 +202,6 @@ class Tableau {
 				})
 			});
 			//REGLA T
-			console.log("Ending knowing")
 		} else if(formula.neg){
 			if (formula.neg.kno_start){
 				const agents = formula.neg.kno_start.group_end[0].prop.split('');
@@ -248,14 +244,34 @@ class Tableau {
 			}else if(formula.neg.prop){
 				console.log("No more rules applied here!")
 			}
-		}else{
-			return null
 		}
+		let leafs = this.getLeafs();
+		let leafsAva = leafs.filter((leaf) => this.isLeafAvailable(leaf));
+		if (leafsAva.length === 0){
+			this.alpha_group = []
+			this.beta_group = []
+			this.nu_group = []
+			this.pi_group = []
+			return this.getClosedLeafs();
+		}else{
+			return this.getClosedLeafs();
+		}
+	}
+
+	getClosedLeafs(){
+		let closedLeafs = [];
+		let leafs = this.getLeafs();
+		leafs.forEach(leaf =>{
+			let branch = this.getBranchFromLeaf(leaf);
+			if (branch.isClosed()){
+				closedLeafs.push(leaf);
+			}
+		})
+		return closedLeafs;
 	}
 
 	addSingleExtension(formula, node=this.root, label = node.label){
 		const leafs = this.getLeafs(node);
-		console.log(leafs)
 		leafs.forEach(node => {
 			var branch = this.getBranchFromLeaf(node)
 			if (branch.isClosed()){
@@ -566,6 +582,12 @@ class Branch {
 		this.nodes = [];
 	}
 
+	getLeaf(){
+		return this.nodes.reduce((max, currentNode) => {
+			return (currentNode.id > max.id) ? currentNode : max;
+		});
+	}
+
 	addNode(node) {
 		this.nodes.push(node);
 	}
@@ -618,6 +640,7 @@ class Branch {
 		const filtered = labelSet.filter((x) => x.isSimpleExtension(label))
 		return filtered;
 	}
+
 }
 
 
