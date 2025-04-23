@@ -157,11 +157,8 @@ class Tableau {
 	applyRule(data){
 		var node = data;
 		if (typeof data === "string"){
-			node = this.getNodeFromId(this.root, data)
-			console.log(this.alpha_group)
-			console.log(this.beta_group)
-			if (!this.beta_group.some(x => x.id === node.id)){
-				console.log("NO APLICAR")
+			node = this.getNodeFromId(data)
+			if (!this.isAvailable(node)){
 				return
 			}
 		}
@@ -415,6 +412,19 @@ class Tableau {
 		this.updateNuGroup(node.right); 
 	}
 
+	isAvailable(data){
+		var node = data;
+		if (typeof data	 === "string"){
+			node = this.getNodeFromId(data)
+		}
+		var inAlpha = this.alpha_group.some(x => x.id === node.id);
+		var inBeta 	= this.beta_group.some(x => x.id === node.id);
+		var inNu 	= this.nu_group.some(x => x.id === node.id);
+		var inPi 	= this.pi_group.some(x => x.id === node.id);
+
+		return inAlpha || inBeta || inNu || inPi;
+	}
+
 	runTableau(){
 		// while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0 || this.nu_group.length > 0 ){
 			const logger = new Logger();
@@ -470,16 +480,16 @@ class Tableau {
 		return leafs.filter(d => Number(d.id) === searchId)[0];
 	}
 
-	getNodeFromId(node, id) {
+	getNodeFromId(id, node=this.root) {
 		if (node === null) return null;
 		if (node.id === Number(id)) {
 			return node;
 		}
-		const leftResult = this.getNodeFromId(node.left, id);
+		const leftResult = this.getNodeFromId(id, node.left);
 		if (leftResult) return leftResult;
 
 		// Search right subtree
-		return this.getNodeFromId(node.right, id);
+		return this.getNodeFromId(id, node.right);
 	}
 
 }
@@ -657,6 +667,7 @@ window.Node = Node;
 window.Tableau = Tableau;
 window.Branch = Branch;
 window.Label = Label;
+window.Logger = Logger;
 window.toD3 = toD3;
 
 

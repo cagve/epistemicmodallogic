@@ -19,14 +19,15 @@ let root;
 let columnAttribute = [];
 let svg, tree, diagonal;
 let currentTableau = null;
+const logger = new Logger();
 
 function run() {
 	const formula = document.getElementById('formulaInput').value;
+	const f = new MPL.Wff(formula)
 	const tableau = new Tableau(formula);
-	// const logger = tableau.runTableau();
-	// displayLogsInHTML(logger);
 	const treeData = tableau.toD3();
 	currentTableau = tableau;
+	logger.addLog("Creating tableau for formula: "+f.unicode())
 
 
 	columnAttribute = [];
@@ -57,9 +58,11 @@ function run() {
 }
 
 function update(source) {
+	displayLogsInHTML(logger);
 	const treeData = tree(root);
 	const nodes = treeData.descendants();
 	const links = treeData.links();
+
 
 	let visibleDepth = getVisibleDepth(root);
 	height = (visibleDepth + 2) * maxLabel;
@@ -80,7 +83,7 @@ function update(source) {
 
 	nodeEnter.append("circle")
 		.attr("r", 0)
-		.style("fill", d => d._children ? "lightsteelblue" : "white");
+		.attr("class", d => currentTableau.isAvailable(d.id) ? "clickable" : "non-cickable");
 
 	nodeEnter.append("text")
 		.attr("x", d => {
@@ -98,7 +101,7 @@ function update(source) {
 
 	nodeUpdate.select("circle")
 		.attr("r", d => computeRadius(d.data))
-		.style("fill", d => d._children ? "lightsteelblue" : "#fff");
+		.attr("class", d => currentTableau.isAvailable(d.id) ? "clickable" : "non-cickable");
 
 	nodeUpdate.select("text").style("fill-opacity", 1);
 
@@ -166,9 +169,7 @@ function rclick(event, d) {
 	event.preventDefault();
 	console.log("RCLICK on node:", d);
 	if (currentTableau) {
-		console.log(currentTableau.alpha_group)
-		console.log(currentTableau.beta_group)
-		console.log(`Applying rule on node ID: ${d.id}`);
+		logger.addLog(`Applying rule on node ID: ${d.id}, formula: ${d.data.value.unicode()}`);
 		currentTableau.applyRule(d.id);
 		const newTreeData = currentTableau.toD3();
 		root = d3.hierarchy(newTreeData, (d) => d.children);
@@ -177,7 +178,7 @@ function rclick(event, d) {
 		});
 		root.x0 = width / 2;
 		root.y0 = 0;
-		update(root);
+		update(d);
 	}
 }
 
