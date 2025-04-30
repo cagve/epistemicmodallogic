@@ -3,6 +3,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 document.addEventListener('DOMContentLoaded', () => {
 	document.getElementById('ez-button').addEventListener('click', () => run(true));
+	document.getElementById('clear-button').addEventListener('click', () => clear());
 	document.getElementById('run-button').addEventListener('click', () => run());
 	document.getElementById('formulaInput').addEventListener('keydown', event => {
 		if (event.key === 'Enter') {
@@ -33,12 +34,12 @@ function run(ezmode=false) {
 	const formula = document.getElementById('formulaInput').value;
 	const f = new MPL.Wff(formula)
 	const tableau = new Tableau(formula);
+	logger.addLog("Creating tableau in EZMODE for formula: " + f.unicode())
 	if (ezmode){
 		tableau.runTableau(logger);
 	}
 	const treeData = tableau.toD3();
 	currentTableau = tableau;
-	logger.addLog("Creating tableau in EZMODE for formula: " + f.unicode())
 
 	columnAttribute = [];
 	i = 0;
@@ -202,14 +203,12 @@ function click(event, d) {
 
 function dblClick(event, d) {
 	columnAttribute.push(d.data.name);
-	console.log(columnAttribute);
 }
 
 function rclick(event, d) {
 	event.preventDefault();
-	console.log("RCLICK on node:", d);
 	if (currentTableau) {
-		let closedLeafs = currentTableau.applyRule(d.id);
+		let closedLeafs = currentTableau.applyRule(d.id, logger);
 		const newTreeData = currentTableau.toD3();
 		root = d3.hierarchy(newTreeData, (d) => d.children);
 		root.each(function(d) {
@@ -217,10 +216,9 @@ function rclick(event, d) {
 		});
 		root.x0 = container.clientWidth / 2;
 		root.y0 = 0;
+		// TODO: UNIFY IN THE BRAIN
 		if (closedLeafs == null){
 			logger.addLog(`[Error] Can not apply rule to ID: ${d.id})}`);
-		}else{
-			logger.addLog(`Applying rule on node ID: ${d.id}, formula: ${d.data.value.unicode()}`);
 		}
 		if(currentTableau.isEnded()){
 			logger.addLog("Tableau finished");
@@ -275,3 +273,9 @@ function getPathToRoot(node) {
     return path;
 }
 
+function clear(){
+	logger.clearLogs();
+	document.getElementById('formulaInput').value = '';
+    document.getElementById('tree-container').innerHTML = "";
+    displayLogsInHTML(logger)
+}

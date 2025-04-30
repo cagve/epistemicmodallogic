@@ -91,7 +91,8 @@ class Tableau {
 	constructor(data) {
 		if (typeof data === 'string') {
 			// Si formula es un string, usamos MPL.Wff
-			this.root = new Node(1, new MPL.Wff(data), new Label('1'));
+			var formula = new MPL.Wff(data)
+			this.root = new Node(1, formula, new Label('1'));
 		} else {
 			// Si formula no es un string, directamente la pasamos o la procesamos como corresponda
 			this.root = this.fromD3(data)
@@ -154,7 +155,7 @@ class Tableau {
 		return leafs;
 	}
 	
-	applyRule(data){
+	applyRule(data, logger = null){
 		var node = data;
 		if (typeof data === "string"){
 			node = this.getNodeFromId(data)
@@ -162,6 +163,7 @@ class Tableau {
 				return null
 			}
 		}
+		logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
 		this.removeAvailableNode(node)
 		const formula = node.value.json();
 		if (formula.prop){
@@ -246,6 +248,8 @@ class Tableau {
 			}
 		}
 		let leafs = this.getLeafs();
+		
+		const b = leafs[0];
 		let leafsAva = leafs.filter((leaf) => this.isLeafAvailable(leaf));
 		if (leafsAva.length === 0){
 			this.alpha_group = []
@@ -274,7 +278,9 @@ class Tableau {
 		const leafs = this.getLeafs(node);
 		leafs.forEach(node => {
 			var branch = this.getBranchFromLeaf(node)
-			if (branch.isClosed()){
+			var base = label.getBase(branch)
+			var flag = base.some(x=> x.unicode() === formula.unicode())
+			if (branch.isClosed() | flag){
 				return
 			}
 			var newId = parseInt(node.id + '1');
@@ -405,7 +411,6 @@ class Tableau {
 			let label = node.label;
 			branches.forEach(branch => {
 				let exts = branch.getSimpleExtensions(label);
-				console.log(exts)
 				if (exts.length === 0){
 					this.nu_group = this.nu_group.filter(item => item !== node)
 				}else{
@@ -441,11 +446,8 @@ class Tableau {
 		return inAlpha || inBeta || inNu || inPi;
 	}
 
-	runTableau(logger=null){
+	runTableau(logger){
 		// while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0 || this.nu_group.length > 0 ){
-			if (!logger){
-				logger = new Logger();
-			}
 			while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0 || this.nu_group.length >0 ){
 				let leafs = this.getLeafs();
 				let leafsAva = leafs.filter((leaf) => this.isLeafAvailable(leaf));
@@ -454,23 +456,23 @@ class Tableau {
 					break;
 				}else if(this.alpha_group.length > 0 ){
 					this.alpha_group.forEach(node =>{
-						logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
-						this.applyRule(node);
+						// logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
+						this.applyRule(node, logger);
 					})
 				}else if(this.nu_group.length > 0 ){
 					this.nu_group.forEach(node =>{
-						logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
-						this.applyRule(node);
+						// logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
+						this.applyRule(node, logger);
 					})
 				}else if(this.beta_group.length > 0 ){
 					this.beta_group.forEach(node =>{
-						logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
-						this.applyRule(node);
+						// logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
+						this.applyRule(node, logger);
 					})
 				}else if(this.pi_group.length > 0 ){
 					this.pi_group.forEach(node =>{
-						logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
-						this.applyRule(node);
+						// logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
+						this.applyRule(node, logger);
 					})
 				}
 			}
@@ -481,7 +483,7 @@ class Tableau {
 
 	isEnded(){
 		const leafs =  this.getLeafs();
-		return leafs.some(x => !this.isLeafAvailable(x))
+		return leafs.every(x => !this.isLeafAvailable(x))
 	}
 
 	isClosed(){
@@ -647,6 +649,7 @@ class Branch {
 		const filtered = labelSet.filter((x) => x.isSimpleExtension(label))
 		return filtered;
 	}
+
 
 }
 
