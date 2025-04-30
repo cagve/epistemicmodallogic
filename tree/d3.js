@@ -2,6 +2,7 @@ import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 
 document.addEventListener('DOMContentLoaded', () => {
+	document.getElementById('ez-button').addEventListener('click', () => run(true));
 	document.getElementById('run-button').addEventListener('click', () => run());
 	document.getElementById('formulaInput').addEventListener('keydown', event => {
 		if (event.key === 'Enter') {
@@ -27,14 +28,17 @@ let container = document.getElementById('tree-container');
 let width = container.clientWidth - 40; 
 let height = container.clientHeight - 100; 
 
-function run() {
+function run(ezmode=false) {
 	logger.clearLogs();
 	const formula = document.getElementById('formulaInput').value;
 	const f = new MPL.Wff(formula)
 	const tableau = new Tableau(formula);
+	if (ezmode){
+		tableau.runTableau(logger);
+	}
 	const treeData = tableau.toD3();
 	currentTableau = tableau;
-	logger.addLog("Creating tableau for formula: " + f.unicode())
+	logger.addLog("Creating tableau in EZMODE for formula: " + f.unicode())
 
 	columnAttribute = [];
 	i = 0;
@@ -61,6 +65,7 @@ function run() {
 	root.x0 = width / 2;
 	root.y0 = 0;
 
+	displayLogsInHTML(logger);
 	update(root);
 
 }
@@ -183,15 +188,15 @@ function nbEndNodes(d) {
 }
 
 function click(event, d) {
-	// if (d.children) {
-	// 	d._children = d.children;
-	// 	d.children = null;
-	// } else {
-	// 	d.children = d._children;
-	// 	d._children = null;
-	// }
+	if (d.children) {
+		d._children = d.children;
+		d.children = null;
+	} else {
+		d.children = d._children;
+		d._children = null;
+	}
 	update(d);
-	highlightLink(d)
+	// highlightLink(d)
 
 }
 
@@ -204,7 +209,6 @@ function rclick(event, d) {
 	event.preventDefault();
 	console.log("RCLICK on node:", d);
 	if (currentTableau) {
-		logger.addLog(`Applying rule on node ID: ${d.id}, formula: ${d.data.value.unicode()}`);
 		let closedLeafs = currentTableau.applyRule(d.id);
 		const newTreeData = currentTableau.toD3();
 		root = d3.hierarchy(newTreeData, (d) => d.children);
@@ -213,6 +217,14 @@ function rclick(event, d) {
 		});
 		root.x0 = container.clientWidth / 2;
 		root.y0 = 0;
+		if (closedLeafs == null){
+			logger.addLog(`[Error] Can not apply rule to ID: ${d.id})}`);
+		}else{
+			logger.addLog(`Applying rule on node ID: ${d.id}, formula: ${d.data.value.unicode()}`);
+		}
+		if(currentTableau.isEnded()){
+			logger.addLog("Tableau finished");
+		}
 		update(d);
 	}
 }

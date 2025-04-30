@@ -159,7 +159,7 @@ class Tableau {
 		if (typeof data === "string"){
 			node = this.getNodeFromId(data)
 			if (!this.isAvailable(node)){
-				return
+				return null
 			}
 		}
 		this.removeAvailableNode(node)
@@ -441,9 +441,11 @@ class Tableau {
 		return inAlpha || inBeta || inNu || inPi;
 	}
 
-	runTableau(){
+	runTableau(logger=null){
 		// while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0 || this.nu_group.length > 0 ){
-			const logger = new Logger();
+			if (!logger){
+				logger = new Logger();
+			}
 			while (this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0 || this.nu_group.length >0 ){
 				let leafs = this.getLeafs();
 				let leafsAva = leafs.filter((leaf) => this.isLeafAvailable(leaf));
@@ -452,30 +454,35 @@ class Tableau {
 					break;
 				}else if(this.alpha_group.length > 0 ){
 					this.alpha_group.forEach(node =>{
-						logger.addLog("Applying alpha rule to node("+ node.id+ "): "+node.value.unicode())
+						logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
 						this.applyRule(node);
 					})
 				}else if(this.nu_group.length > 0 ){
 					this.nu_group.forEach(node =>{
-						logger.addLog("Applying nu rule to node: "+ node.id+ " phi= "+node.value.unicode())
+						logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
 						this.applyRule(node);
 					})
 				}else if(this.beta_group.length > 0 ){
 					this.beta_group.forEach(node =>{
-						logger.addLog("Applying beta rule to node: "+ node.id+ " phi= "+node.value.unicode())
+						logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
 						this.applyRule(node);
 					})
 				}else if(this.pi_group.length > 0 ){
 					this.pi_group.forEach(node =>{
-						logger.addLog("Applying pi rule to node: "+ node.id+ " phi= "+node.value.unicode())
+						logger.addLog(`Applying rule on node ID: ${node.id}, formula: ${node.value.unicode()}`);
 						this.applyRule(node);
 					})
 				}
 			}
-			console.log("Tableau ended")
+			logger.addLog(`Tableau ended`);
+			console.log(this.isEnded());
 			return logger;
 		}
 
+	isEnded(){
+		const leafs =  this.getLeafs();
+		return leafs.some(x => !this.isLeafAvailable(x))
+	}
 
 	isClosed(){
 		const leafs =  this.getLeafs();
