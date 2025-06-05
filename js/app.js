@@ -13,7 +13,8 @@
 var MODE = {
 	EDIT: 0,
 	EVAL: 1,
-	TEXT: 2
+	TEXT: 2,
+	TABLEAUX: 3
     },
     appMode = MODE.EDIT;
 
@@ -1186,7 +1187,7 @@ function setAppMode(newMode) {
     currentFormula.classed('inactive', true);
     currentSubFormula.classed('inactive', true);
 	currentSubFormula.selectAll("*").remove();
-  } else if(newMode === MODE.EVAL|| newMode === MODE.TEXT ) {
+  } else if(newMode === MODE.EVAL|| newMode === MODE.TEXT) {
     // disable listeners (except for I-bar prevention)
     svg.classed('edit', false)
       .on('mousedown', function() { d3.event.preventDefault(); })
@@ -1217,23 +1218,6 @@ function setAppMode(newMode) {
     // reset eval state
     circle.classed('waiting', true);
     evalOutput.classed('inactive', true);
-
-
-	// BUTTONS
-	  // const invertPropvars = propvars.slice(0,varCount).reverse()
-	  // var ezmode = document.getElementById('ezmode');
-	  // for (let i=0; i< varCount; i++){
-		 //  const a = document.createElement('button')
-		 //  let txt = invertPropvars[i]
-		 //  a.innerHTML = txt;
-		 //  a.setAttribute('class', "btn btn-small atom-button")
-		 //  a.setAttribute('id', "prop"+i)
-		 //  a.onclick = function(){
-			//   addText(txt, this)
-		 //  };
-		 //  ezmode.insertBefore(a, ezmode.firstChild)
-	  // }
-
   } else return;
 
   // switch button and panel states and set new mode

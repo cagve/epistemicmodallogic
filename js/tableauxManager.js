@@ -14,6 +14,21 @@ class Node {
 		return this.parent === null;
 	}
 
+	isContradictory(node){
+		const aLabel = this.label.simplify();
+		const bLabel = node.label.simplify();
+		const aType = this.typeOf();
+		const bType = node.typeOf();
+		if ( aLabel === bLabel &&
+			(aType === 'prop' || aType === 'neg_prop') && 
+			(bType === 'prop' || bType === 'neg_prop')) {
+			var neg = MPL.negateWff(node.value.json()).ascii(); 
+			var current = this.value.ascii();
+			return (neg === current);
+		}
+		return false
+	}
+
 
 	//formula = MLP formula
 	addSingleChild(id, formula, label = this.label){
@@ -184,6 +199,7 @@ class Tableau {
 		}else if(formula.kno_start){  
 			const formula1 = new MPL.Wff(MPL._jsonToASCII(formula))
 			var term  = new MPL.Wff(MPL._jsonToASCII(formula.kno_start.group_end[1]));
+			//RULE T
 			let n = this.addSingleExtension(term, node)
 			const leafs = this.getLeafs(node);
 			leafs.forEach(leaf => {
@@ -196,14 +212,13 @@ class Tableau {
 					// RULE K
 					var newId = parseInt(leaf.id + '1');
 					let newNode = leaf.addSingleChild(newId,term,newLabel);
-					// RULE 4
-					var newnewId = parseInt(newNode.id + '1');
-					let newnewNode = newNode.addSingleChild(newnewId,formula1, newLabel)
-					this.addAvailableNode(newNode)
-					this.addAvailableNode(newnewNode)
+					// // RULE 4
+					// var newnewId = parseInt(newNode.id + '1');
+					// let newnewNode = newNode.addSingleChild(newnewId,formula1, newLabel)
+					// this.addAvailableNode(newNode)
+					// this.addAvailableNode(newnewNode)
 				})
 			});
-			//REGLA T
 		} else if(formula.neg){
 			if (formula.neg.kno_start){
 				const agents = formula.neg.kno_start.group_end[0].prop.split('');
@@ -477,13 +492,11 @@ class Tableau {
 				}
 			}
 			logger.addLog(`Tableau ended`);
-			console.log(this.isEnded());
 			return logger;
 		}
 
 	isEnded(){
-		const leafs =  this.getLeafs();
-		return leafs.every(x => !this.isLeafAvailable(x))
+		return !(this.alpha_group.length > 0 || this.beta_group.length > 0 || this.pi_group.length > 0 || this.nu_group.length >0)
 	}
 
 	isClosed(){
@@ -495,6 +508,7 @@ class Tableau {
 	}
 
 	isLeafAvailable(leaf){
+		// ERRONEA NECVESITA CHEKEAR GRUPOS
 		const branch = this.getBranchFromLeaf(leaf)
 		return !branch.isClosed();
 	}
@@ -591,6 +605,12 @@ class Branch {
 		this.nodes = [];
 	}
 
+	getNodesId(){
+		let nodesId =[];
+		this.nodes.forEach(node => nodesId.push(node.id))
+		return nodesId
+	}
+
 	getLeaf(){
 		return this.nodes.reduce((max, currentNode) => {
 			return (currentNode.id > max.id) ? currentNode : max;
@@ -618,6 +638,19 @@ class Branch {
 				return false
 			})
 		);
+	}
+
+	getContradictoryNode(){
+		if(!this.isClosed){
+			return null
+		}
+		let leaf = this.getLeaf();
+		const contradictoryNode = this.nodes.find((node) => {
+			if (leaf.isContradictory(node)) {
+				return true
+			}
+		})
+		return contradictoryNode
 	}
 
 	getAllLabels(){

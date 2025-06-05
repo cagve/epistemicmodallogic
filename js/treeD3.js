@@ -83,6 +83,7 @@ function update(source) {
 	const treeData = tree(root);
 	const nodes = treeData.descendants();
 	const links = treeData.links();
+	const leafs = currentTableau.getLeafs();
 
 	let visibleDepth = getVisibleDepth(root);
 	height = (visibleDepth + 2) * maxLabel;  // Adjust height based on visible depth
@@ -99,13 +100,12 @@ function update(source) {
 	const nodeEnter = node.enter().append("g")
 		.attr("class", "node")
 		.attr("transform", d => `translate(${source.x0},${source.y0})`)
-		.on("click", click)
-		.on("contextmenu", rclick)
+		.on("click", rclick)
+		.on("contextmenu", click)
 		.on("dblclick", dblClick);
 
 	nodeEnter.append("circle")
 		.attr("r", 0)
-		.attr("class", d => currentTableau.isAvailable(d.id) ? "clickable" : "non-cickable");
 
 	nodeEnter.append("text")
 		.attr("x", d => {
@@ -121,9 +121,11 @@ function update(source) {
 		.duration(duration)
 		.attr("transform", d => `translate(${d.x},${d.y})`);
 
+
+	let leafsId = leafs.map(x => x.id)
 	nodeUpdate.select("circle")
 		.attr("r", d => computeRadius(d.data))
-		.attr("class", d => currentTableau.isAvailable(d.id) ? "clickable" : "non-cickable");
+		.attr("class", d => (currentTableau.isAvailable(d.id) || leafsId.includes(Number(d.id)))? "clickable" : "non-clickable");
 
 	nodeUpdate.select("text").style("fill-opacity", 1);
 
@@ -160,22 +162,18 @@ function update(source) {
 		d.y0 = d.y;
 	});
 	
-    // Verificar si el tableau está cerrado
-	// [FiX] Mejorar
- //    const isClosed = currentTableau.isClosed();
-	// if (isClosed){
-	// 	setTimeout(() => {
-	// 		console.log(svg.selectAll("circle"));
-	// 		svg.selectAll("circle")
-	// 			.transition().duration(duration)
-	// 			.style("fill", 'red');
-	//
-	// 		svg.selectAll("path.link")
-	// 			.transition().duration(duration)
-	// 			.style("stroke", 'red');
-	//
-	// 	}, 600); 
-	// }
+    const ended = currentTableau.isEnded();
+	if (ended){
+		leafs.forEach(leaf =>{
+			let b = currentTableau.getBranchFromLeaf(leaf)
+			const styleColor = b.isClosed() ? 'red' : 'green';
+			console.log(b.isClosed())
+			console.log(styleColor)
+			svg.selectAll("circle")
+				.filter(d => d.id == leaf.id)
+				.style("stroke", 'red') //USAR CLASS
+		})
+	}
 }
 
 function computeRadius(d) {
@@ -217,11 +215,31 @@ function rclick(event, d) {
 		root.x0 = container.clientWidth / 2;
 		root.y0 = 0;
 		// TODO: UNIFY IN THE BRAIN
-		if (closedLeafs == null){
-			logger.addLog(`[Error] Can not apply rule to ID: ${d.id})}`);
-		}
+		let leafs = currentTableau.getLeafs().map(x => x.id)
 		if(currentTableau.isEnded()){
-			logger.addLog("Tableau finished");
+			if(!leafs.includes(Number(d.id))){
+				logger.addLog(`[Error] Can not apply rule to ID: ${d.id})} because tableau is finised.`);
+			}else{
+				let leaf = currentTableau.getNodeFromId(d.id);
+				console.log(leaf)
+				let b = currentTableau.getBranchFromLeaf(leaf);
+				let negNode = b.getContradictoryNode();
+				if (!negNode){return }
+				const styleColor = b.isClosed() ? 'red' : 'green';
+				// LOS CONVIERTE NORMALES
+				svg.selectAll("circle")
+					.filter(d => d.id == negNode.id)
+					.style("stroke", styleColor)
+					.each(function() {
+						vibrate(this);
+					});
+
+				svg.selectAll("circle")
+					.filter(d => (d.id != negNode.id)&&(d.id != leaf.id))
+					.style("stroke", "gray"); // los que no coinciden
+			}
+	}else if (closedLeafs == null){
+			logger.addLog(`[Error] Can not apply rule to ID: ${d.id})}`);
 		}
 		update(d);
 	}
@@ -278,4 +296,21 @@ function clear(){
 	document.getElementById('formulaInput').value = '';
     document.getElementById('tree-container').innerHTML = "";
     displayLogsInHTML(logger)
+}
+
+function vibrate(circle) {
+  let i = 0;
+  const vibrateInterval = setInterval(() => {
+    const dx = (Math.random() - 0.5) * 2; // jitter between -1 and 1
+    const dy = (Math.random() - 0.5) * 2;
+
+    d3.select(circle)
+      .attr("transform", `translate(${dx}, ${dy})`);
+
+    i++;
+    if (i > 20) {
+      clearInterval(vibrateInterval);
+      d3.select(circle).attr("transform", null); // reset
+    }
+  }, 50);
 }
