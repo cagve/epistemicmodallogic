@@ -15,18 +15,18 @@
 	</script>
 	<script src="js/MPL.js">
 	</script>
-	<script type="module" src="./js/tableauxManager.js">
+	<script type="module" src="js/tableauxManager.js">
 	</script>
-	<script type="module" src="./js/treeD3.js">
+	<script type="module" src="js/treeD3.js">
 	</script>
 	<body>	
-		<h1>Tableau</h1>
 		<div id=page-container>
+			<h1>Tableau</h1>
 			<div id="app-body">
 				<div id="tab-content">
 					<div class="eval-input">
 						Enter a formula:
-						<input type="text" id="formulaInput" value="K{a}~K{a}p">
+						<input type="text" id="formulaInput" value="(~(p & q) & (p & q)) | (p & q)">
 						<button class="btn btn-primary" id="run-button"> Step-by-step </button>
 						<button class="btn btn-primary" id="ez-button"> Ez Mode </button>
 						<button class="btn btn-danger" id="clear-button">Clear</button>

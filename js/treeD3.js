@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.getElementById('formulaInput').addEventListener('keydown', event => {
 		if (event.key === 'Enter') {
 			event.preventDefault();
-			run();
+			run(true); //ez mode
 		}
 	});
 
@@ -114,7 +114,8 @@ function update(source) {
 		})
 		.attr("dy", "3")
 		.attr("text-anchor", d => d.children || d._children ? "end" : "start")
-		.text(d => `(${d.id}) ${d.data.label}: ${d.data.value.unicode()}`)
+		// .text(d => `(${d.id}) ${d.data.label}: ${d.data.value.unicode()}`) // PARA DEBUG CON LABELS
+		.text(d => `${d.data.label}: ${d.data.value.unicode()}`)
 		.style("fill-opacity", 0);
 
 	const nodeUpdate = node.merge(nodeEnter).transition()
@@ -167,11 +168,9 @@ function update(source) {
 		leafs.forEach(leaf =>{
 			let b = currentTableau.getBranchFromLeaf(leaf)
 			const styleColor = b.isClosed() ? 'red' : 'green';
-			console.log(b.isClosed())
-			console.log(styleColor)
 			svg.selectAll("circle")
 				.filter(d => d.id == leaf.id)
-				.style("stroke", 'red') //USAR CLASS
+				.style("stroke",styleColor) //USAR CLASS
 		})
 	}
 }
@@ -210,7 +209,7 @@ function rclick(event, d) {
 		const newTreeData = currentTableau.toD3();
 		root = d3.hierarchy(newTreeData, (d) => d.children);
 		root.each(function(d) {
-			d.id = d.data.id || d.id;  // Ensure IDs are not overwritten
+			d.id = d.data.id || d.id;  // ID not overwritten!!!!
 		});
 		root.x0 = container.clientWidth / 2;
 		root.y0 = 0;
@@ -221,22 +220,36 @@ function rclick(event, d) {
 				logger.addLog(`[Error] Can not apply rule to ID: ${d.id})} because tableau is finised.`);
 			}else{
 				let leaf = currentTableau.getNodeFromId(d.id);
-				console.log(leaf)
 				let b = currentTableau.getBranchFromLeaf(leaf);
 				let negNode = b.getContradictoryNode();
-				if (!negNode){return }
+				if (!negNode){
+					negNode = root
+					console.log("HOA")
+				}
+				let negD3Node = svg.selectAll("circle")
+						.filter(d => d.id == negNode.id)
 				const styleColor = b.isClosed() ? 'red' : 'green';
-				// LOS CONVIERTE NORMALES
-				svg.selectAll("circle")
-					.filter(d => d.id == negNode.id)
-					.style("stroke", styleColor)
-					.each(function() {
-						vibrate(this);
-					});
-
+				negD3Node.style("stroke", styleColor)
+				const target =negD3Node.datum()
+				let current = d;
+				const linksToHighlight = [];
+				while (current !== target && current.parent) {
+					linksToHighlight.push({ source: current.parent, target: current });
+					current = current.parent;
+				}
 				svg.selectAll("circle")
 					.filter(d => (d.id != negNode.id)&&(d.id != leaf.id))
 					.style("stroke", "gray"); // los que no coinciden
+
+				d3.selectAll("path.link")
+					.style("stroke", d => 
+						linksToHighlight.some(l => l.source === d.source && l.target === d.target)
+						? styleColor : "gray"
+					)
+					.style("stroke-width", d => 
+						linksToHighlight.some(l => l.source === d.source && l.target === d.target)
+						? 3 : 1.5
+					)
 			}
 	}else if (closedLeafs == null){
 			logger.addLog(`[Error] Can not apply rule to ID: ${d.id})}`);
@@ -298,19 +311,51 @@ function clear(){
     displayLogsInHTML(logger)
 }
 
-function vibrate(circle) {
-  let i = 0;
-  const vibrateInterval = setInterval(() => {
-    const dx = (Math.random() - 0.5) * 2; // jitter between -1 and 1
-    const dy = (Math.random() - 0.5) * 2;
+function animationContradiction(element) {
+	vibrate(element, () => {
+		strokeColorAnimation(element);
+	});
+}
 
-    d3.select(circle)
-      .attr("transform", `translate(${dx}, ${dy})`);
+function vibrate(element, onEnd) {
+	let i = 0;
+	const steps = 20;
+	const interval = 50;
 
-    i++;
-    if (i > 20) {
-      clearInterval(vibrateInterval);
-      d3.select(circle).attr("transform", null); // reset
-    }
-  }, 50);
+	const vibrateInterval = setInterval(() => {
+		const dx = (Math.random() - 0.5) * 2;
+		const dy = (Math.random() - 0.5) * 2;
+
+		d3.select(element).attr("transform", `translate(${dx}, ${dy})`);
+		i++;
+
+		if (i >= steps) {
+			clearInterval(vibrateInterval);
+			d3.select(element).attr("transform", null); // reset
+
+			if (typeof onEnd === "function") {
+				onEnd(); // ejecutar cuando termine
+			}
+		}
+	}, interval);
+}
+
+function strokeColorAnimation(element, duration = 500) {
+	d3.select(element)
+		.transition()
+		.duration(duration)
+		.style("stroke", 'gray');
+}
+
+function animatePath(pathSelection) {
+  const path = pathSelection.node();
+  const length = path.getTotalLength();
+
+  pathSelection
+    .style("stroke-dasharray", length)
+    .style("stroke-dashoffset", length)
+    .transition()
+    .duration(1000)          // duración de la animación en ms
+    .ease(d3.easeLinear)
+    .style("stroke-dashoffset", 0);
 }
