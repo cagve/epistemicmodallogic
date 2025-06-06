@@ -115,7 +115,16 @@ function update(source) {
 		.attr("dy", "3")
 		.attr("text-anchor", d => d.children || d._children ? "end" : "start")
 		// .text(d => `(${d.id}) ${d.data.label}: ${d.data.value.unicode()}`) // PARA DEBUG CON LABELS
-		.text(d => `${d.data.label}: ${d.data.value.unicode()}`)
+		.text(d => {
+			// console.log(d.data.origin)
+			let origin = ''
+			if (!d.data.origin){
+				origin = 'root' 
+			}else{
+				origin = d.data.origin.id
+			}
+			return `(${d.id}) = ${origin} = ${d.data.label}: ${d.data.value.unicode()}`
+		})
 		.style("fill-opacity", 0);
 
 	const nodeUpdate = node.merge(nodeEnter).transition()

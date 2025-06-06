@@ -1,13 +1,14 @@
 // const MPL = require('../js/MPL.js'); // [TEST]
 
 class Node {
-	constructor(id,value, label, parent = null) {
+	constructor(id,value, label, parent = null, origin=null) {
 		this.id = id;
 		this.parent = parent;
 		this.right = null;
 		this.left = null;
 		this.value = value;
 		this.label = label;
+		this.origin = origin;
 	}
 	
 	isRoot(){
@@ -31,19 +32,19 @@ class Node {
 
 
 	//formula = MLP formula
-	addSingleChild(id, formula, label = this.label){
+	addSingleChild(id, formula, label = this.label, origin){
 		if (this.left === null){
-			let node = new Node(id, formula, label, this)
+			let node = new Node(id, formula, label, this, origin)
 			this.left = node
 			return node;
 		}else{
-			this.left.addSingleChild(id, formula, label)
+			this.left.addSingleChild(id, formula, label, origin)
 		}
 	}
 
-	addTwoChildren(id1, formula1, id2, formula2, label=this.label){
-		const node1 = new Node(id1, formula1, label, this);
-		const node2 = new Node(id2, formula2, label, this);
+	addTwoChildren(id1, formula1, id2, formula2, label=this.label, origin){
+		const node1 = new Node(id1, formula1, label, this, origin);
+		const node2 = new Node(id2, formula2, label, this, origin);
 		this.left = node1
 		this.right = node2
 		return [node1, node2]
@@ -291,30 +292,31 @@ class Tableau {
 
 	addSingleExtension(formula, node=this.root, label = node.label){
 		const leafs = this.getLeafs(node);
-		leafs.forEach(node => {
-			var branch = this.getBranchFromLeaf(node)
+		leafs.forEach(leaf => {
+			var branch = this.getBranchFromLeaf(leaf)
 			var base = label.getBase(branch)
 			var flag = base.some(x=> x.unicode() === formula.unicode())
 			if (branch.isClosed() | flag){
 				return
 			}
-			var newId = parseInt(node.id + '1');
-			const newNode = node.addSingleChild(newId, formula, label);
+			var newId = parseInt(leaf.id + '1');
+			const newNode = leaf.addSingleChild(newId, formula, label, node);
 			this.addAvailableNode(newNode);
 		})
 	}
 
-	addDoubleExtension(formula1, formula2, node=this.root,label=node.label){
+	addDoubleExtension(formula1, formula2, node=this.root, label=node.label){
 		const leafs = this.getLeafs(node);
 		leafs.filter((leaf) => this.isLeafAvailable(leaf))
-		leafs.forEach(node => {
-			var newId1 = parseInt(node.id + '1');
-			var newId2 = parseInt(node.id + '2');
-			let [newNode1, newNode2] = node.addTwoChildren(newId1, formula1,  newId2, formula2, label);
+		leafs.forEach(leaf => {
+			var newId1 = parseInt(leaf.id + '1');
+			var newId2 = parseInt(leaf.id + '2');
+			let [newNode1, newNode2] = leaf.addTwoChildren(newId1, formula1,  newId2, formula2, label, node);
 			this.addAvailableNode(newNode1)
 			this.addAvailableNode(newNode2)
 		})
 	}
+
 	
 
 	preOrderTraversal(node = this.root){
@@ -401,6 +403,7 @@ class Tableau {
 			id: node.id.toString(),
 			value: node.value,
 			label: node.label,
+			origin: node.origin,
 			children: []
 		};
 		if (node.left) {
