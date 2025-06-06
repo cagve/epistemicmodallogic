@@ -114,6 +114,8 @@ function update(source) {
 		.attr("r", 0)
 		.on('mouseover', function (event, d) {
 			let origin = d.data.origin
+			let originD3Node = svg.selectAll("circle")
+				.filter(d => d.id == origin.id)
 			let divText = `
 			<span class="label">Source node:</span> ${origin.id}<br>
 			<span class="label">Applied rule:</span> ${origin.typeOf()}<br>
@@ -121,7 +123,7 @@ function update(source) {
 			<span class="label">Derived formula:</span> ${d.data.value.unicode()}
 			`
 			d3.select(this).transition()
-				.duration('100')
+				.duration(100)
 				.attr("r", 7);
 			div.transition()
 				.duration(100)
@@ -129,14 +131,27 @@ function update(source) {
 			div.html(divText)
 				.style("left", (event.pageX + 10) + "px")
 				.style("top", (event.pageY - 15) + "px");
+
+			d3.select(this).transition()
+				.style("stroke", "orange"); 
+			originD3Node.transition()
+				.style("stroke", "orange");
 		})
 		.on('mouseout', function (event, d) {
+			let origin = d.data.origin
+			let originD3Node = svg.selectAll("circle")
+				.filter(d => d.id == origin.id)
 			d3.select(this).transition()
 				.duration('200')
 				.attr("r", 5);
 			div.transition()
 				.duration(200)
 				.style("opacity", 0);
+
+			d3.select(this).transition()
+				.style("stroke", "gray"); 
+			originD3Node.transition()
+				.style("stroke", "gray");
 		});
 
 	nodeEnter.append("text")
@@ -395,8 +410,6 @@ function animatePath(pathSelection) {
 function nodeOrigin(event, d) {
 	event.preventDefault();
 	let origin = d.data.origin
-	let id = origin.id
-	let formula = origin
 	logger.addLog(`Este nodo se ha generado al aplicar regla ${origin.typeOf()} en el nodo: ${origin.id}:${origin.value.ascii()}`)
 	console.log(origin)
 	update(d);
