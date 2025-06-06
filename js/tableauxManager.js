@@ -212,7 +212,7 @@ class Tableau {
 				exts.forEach(newLabel =>{
 					// RULE K
 					var newId = parseInt(leaf.id + '1');
-					let newNode = leaf.addSingleChild(newId,term,newLabel);
+					let newNode = leaf.addSingleChild(newId, term, newLabel, node);
 					// // RULE 4
 					// var newnewId = parseInt(newNode.id + '1');
 					// let newnewNode = newNode.addSingleChild(newnewId,formula1, newLabel)
@@ -239,7 +239,7 @@ class Tableau {
 					}
 					// RULE K
 					var newId = parseInt(leaf.id + '1');
-					let newNode = leaf.addSingleChild(newId,f1, newLabel)
+					let newNode = leaf.addSingleChild(newId,f1, newLabel, node)
 					this.addAvailableNode(newNode);
 					this.updateNuGroup();
 				})
