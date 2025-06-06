@@ -494,7 +494,7 @@ class Tableau {
 					})
 				}
 			}
-			logger.addLog(`Tableau ended`);
+			logger.addLog('========== TABLEAUX ENDED ==========')
 			return logger;
 		}
 

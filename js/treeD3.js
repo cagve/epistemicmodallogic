@@ -29,11 +29,17 @@ let container = document.getElementById('tree-container');
 let width = container.clientWidth - 40; 
 let height = container.clientHeight - 100; 
 
+// DIV PARA MOSTRAR VALOR EN HOVER
+var div = d3.select("body").append("div")
+     .attr("class", "tooltip")
+     .style("opacity", 0);
+
 function run(ezmode=false) {
 	logger.clearLogs();
 	const formula = document.getElementById('formulaInput').value;
 	const f = new MPL.Wff(formula)
 	const tableau = new Tableau(formula);
+	logger.addLog("========== STARTING TABLEAU ==========")
 	logger.addLog("Creating tableau in EZMODE for formula: " + f.unicode())
 	if (ezmode){
 		tableau.runTableau(logger);
@@ -101,11 +107,37 @@ function update(source) {
 		.attr("class", "node")
 		.attr("transform", d => `translate(${source.x0},${source.y0})`)
 		.on("click", rclick)
-		.on("contextmenu", click)
+		.on("contextmenu",click )
 		.on("dblclick", dblClick);
 
 	nodeEnter.append("circle")
 		.attr("r", 0)
+		.on('mouseover', function (event, d) {
+			let origin = d.data.origin
+			let divText = `
+			<span class="label">Source node:</span> ${origin.id}<br>
+			<span class="label">Applied rule:</span> ${origin.typeOf()}<br>
+			<span class="label">Original formula:</span> ${origin.value.unicode()}<br>
+			<span class="label">Derived formula:</span> ${d.data.value.unicode()}
+			`
+			d3.select(this).transition()
+				.duration('100')
+				.attr("r", 7);
+			div.transition()
+				.duration(100)
+				.style("opacity", 1);
+			div.html(divText)
+				.style("left", (event.pageX + 10) + "px")
+				.style("top", (event.pageY - 15) + "px");
+		})
+		.on('mouseout', function (event, d) {
+			d3.select(this).transition()
+				.duration('200')
+				.attr("r", 5);
+			div.transition()
+				.duration(200)
+				.style("opacity", 0);
+		});
 
 	nodeEnter.append("text")
 		.attr("x", d => {
@@ -114,18 +146,9 @@ function update(source) {
 		})
 		.attr("dy", "3")
 		.attr("text-anchor", d => d.children || d._children ? "end" : "start")
-		// .text(d => `(${d.id}) ${d.data.label}: ${d.data.value.unicode()}`) // PARA DEBUG CON LABELS
-		.text(d => {
-			// console.log(d.data.origin)
-			let origin = ''
-			if (!d.data.origin){
-				origin = 'root' 
-			}else{
-				origin = d.data.origin.id
-			}
-			return `(${d.id}) = ${origin} = ${d.data.label}: ${d.data.value.unicode()}`
-		})
+		 .html(d => `<tspan class="label">${d.data.label}:</tspan> <tspan class="value">${d.data.value.unicode()}</tspan>`)
 		.style("fill-opacity", 0);
+
 
 	const nodeUpdate = node.merge(nodeEnter).transition()
 		.duration(duration)
@@ -367,4 +390,14 @@ function animatePath(pathSelection) {
     .duration(1000)          // duración de la animación en ms
     .ease(d3.easeLinear)
     .style("stroke-dashoffset", 0);
+}
+
+function nodeOrigin(event, d) {
+	event.preventDefault();
+	let origin = d.data.origin
+	let id = origin.id
+	let formula = origin
+	logger.addLog(`Este nodo se ha generado al aplicar regla ${origin.typeOf()} en el nodo: ${origin.id}:${origin.value.ascii()}`)
+	console.log(origin)
+	update(d);
 }
