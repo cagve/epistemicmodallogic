@@ -1,9 +1,12 @@
 (FORK) Epistemic Logic Playground
 ======================
-## TODO 
+### TODO 
 - [ ] (Subformulas) get back to the original model.
+- [ ] Text about Common and Distributed Knowledge.
+- [ ] 
 
 
+### FORK
 This project is based on the open-source <a href="http://rkirsling.github.io/modallogic/">Epistemic Logic Playground</a> by <a href="https://github.com/vezwork/">Elliot vezwork
 </a> and <a href="http://rkirsling.github.io/modallogic/">Modal Logic Playground</a> by <a href="https://github.com/rkirsling">Ross Kirsling</a>. 
 
