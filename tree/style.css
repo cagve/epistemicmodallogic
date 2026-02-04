@@ -1,0 +1,131 @@
+svg{
+    /*background:gray;*/
+    display: block;
+    margin: auto;
+}
+
+
+.node {
+	pointer
+}
+/* Nodes */
+.clickable {
+    fill: #fff;
+    stroke: steelblue;
+    stroke-width: 3px;
+}
+
+.non-cickable {
+    fill: #fff;
+    stroke: gray;
+    stroke-width: 3px;
+}
+
+.node text{ 
+	font: 12px sans-serif;
+	background-color: #fff;
+}
+
+
+/* Links */
+.link{
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 2px;
+}
+
+
+.close-leaf{
+    fill: Red;
+}
+
+.open-leaf{
+    fill: Green;
+}
+
+#app-body {
+	border: 2px solid #ddd;
+	border-radius: 4px;
+	margin:100px;
+	display:flex;
+	/* align-content:stretch; */
+}
+
+#tab-content{
+	width:15%;
+	padding: 10px;
+	background-color:#ddd
+}
+
+.eval-input{
+	margin-bottom: 15px;
+}
+
+.eval-input input {
+	width: 100%;
+	font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+	font-size: 12px;
+	border: 1px solid #ddd;
+	padding: 10px;
+	margin-bottom: 10px;
+}
+
+#tree-container{
+	width:85%;
+	height:100%;
+}
+
+.selectedNode circle{
+	fill:gray;
+}
+
+#log-container {
+    font-family: monospace;
+    max-height: 1000px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background: #f9f9f9;
+	font-size:9px;
+}
+
+.log-entry {
+    margin-bottom: 5px;
+    padding: 3px;
+}
+
+.log-info {
+    color: #2e86c1;
+}
+
+.log-error {
+    color: #c0392b;
+    font-weight: bold;
+}
+
+.timestamp {
+    color: #7f8c8d;
+    margin-right: 10px;
+	
+}
+
+
+.node.clickable circle {
+  fill: #4CAF50; /* verde */
+  cursor: pointer;
+  stroke: #2e7d32;
+  stroke-width: 2px;
+  transition: fill 0.2s;
+}
+
+.node.clickable:hover circle {
+  fill: #66bb6a;
+}
+
+.node.disabled circle {
+  fill: #ccc; /* gris */
+  stroke: #999;
+  stroke-width: 1px;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
