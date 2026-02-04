@@ -1233,10 +1233,11 @@ function setAppMode(newMode) {
     circle.classed('waiting', true);
     evalOutput.classed('inactive', true);
 		if (newMode === MODE.TREE){
-			d3.select('#app-body .graph').style('display', 'none');
+			d3.select("#graph-container").select("svg").remove();
+			// d3.select('#app-body .graph').style('display', 'none');
 			d3.select('#info-box').style('display', 'none');
-			currentFormula.classed('inactive', true);
-			currentSubformula.classed('inactive', true);
+			// currentFormula.classed('inactive', true);
+			// currentSubformula.classed('inactive', true);
 		}
   } else return;
 

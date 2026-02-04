@@ -45,8 +45,25 @@ var MPL = (function (FormulaParser) {
   function _asciiToJSON(ascii) {
     return MPLParser.parse(ascii);
   }
-
 	
+	// MIA
+  function negateWff(json){
+	  var simply = simplifyWff(json)
+	  var ascii = _jsonToASCII(simply)
+	  var f = '~('+ascii+')'
+	  var result = _jsonToASCII(simplifyWff(new Wff(f).json()))
+	  return new Wff(result)
+  }
+
+	// MIA
+ 	function simplifyWff(json){
+		if (json.neg){
+			if(json.neg.neg){
+				return json.neg.neg
+			}
+		}
+		return json
+	}
   /**
    * Converts an MPL wff from JSON to ASCII.
    * @private
@@ -730,7 +747,13 @@ var MPL = (function (FormulaParser) {
 	  Wff: Wff,
 	  Model: Model,
 	  truth: truth,
-	  subformulas: subformulas
+	  subformulas: subformulas,
+		negateWff: negateWff,
+		simplifyWff: simplifyWff,
+		_jsonToASCII: _jsonToASCII,
+		_asciiToJSON: _asciiToJSON,
+		_asciiToUnicode: _asciiToUnicode,
+		_asciiToLaTeX: _asciiToLaTeX
   };
 
 })(FormulaParser);

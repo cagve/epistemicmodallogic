@@ -1,4 +1,4 @@
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+// import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,7 +25,7 @@ let columnAttribute = [];
 let svg, tree, diagonal;
 let currentTableau = null;
 const logger = new Logger();
-let container = document.getElementById('tree-container');
+let container = document.getElementById('graph-container');
 let width = container.clientWidth - 40; 
 let height = container.clientHeight - 100; 
 
@@ -44,10 +44,10 @@ function run(ezmode=false) {
 	columnAttribute = [];
 	i = 0;
 
-	d3.select("#tree-container").selectAll("*").remove();
+	d3.select("#graph-container").selectAll("*").remove();
 
 	// Set up SVG with dynamic width and height based on the container size
-	svg = d3.select("#tree-container").append("svg")
+	svg = d3.select("#graph-container").append("svg")
 		.attr("width", width)
 		.attr("height", height)
 		.append("g")
@@ -75,7 +75,7 @@ function update(source) {
 	displayLogsInHTML(logger);
 
 	// Get the container element again in case it was resized
-	container = document.getElementById('tree-container');
+	container = document.getElementById('graph-container');
 	width = container.clientWidth - 40; // Adjust for padding/margin
 	height = container.clientHeight - 100; // Adjust for padding/margin
 
@@ -276,6 +276,6 @@ function getPathToRoot(node) {
 function clear(){
 	logger.clearLogs();
 	document.getElementById('formulaInput').value = '';
-    document.getElementById('tree-container').innerHTML = "";
+    document.getElementById('graph-container').innerHTML = "";
     displayLogsInHTML(logger)
 }

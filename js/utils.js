@@ -64,3 +64,6 @@ function applyStyles(show, hide) {
     styleScript.innerHTML += `.${clase} { display:inline; }`;
   });
 }
+
+
+
