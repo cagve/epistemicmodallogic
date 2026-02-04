@@ -27,19 +27,10 @@
 					<button class="btn btn-primary" onclick="setAppMode(MODE.EVAL)"> <i class="icon-eye-open icon-white"> </i>
 						Evaluate Formula
 					</button>
-					<button class="btn btn-primary" onclick="setAppMode(MODE.TEXT)"> <i class="icon-eye-open icon-white"> </i>
-						Text mode
-					</button>
 				</div>
 				<div id="app-body">
 					<div class="panel tab-content">
 						<div id="edit-pane" class="tab-pane active">
-							<div id="upload-pane">
-								<input type="file" id="fileInput" style="display: none;">
-								<button id="readFileButton"> Upload Model </button>
-								<pre id="fileContent">
-								</pre>
-							</div>
 							<div class="agent-btns">
 								Current agent:
 								<br>
@@ -128,28 +119,6 @@
 							</div>
 						</div>
 						<div id="eval-pane" class="tab-pane">
-							<div class="eval-buttons">
-								<button class="atom-button" onclick=addText('p',this)>p</button>
-								<button class="atom-button" onclick=addText('q',this)>q</button>
-								<button class="atom-button" onclick=addText('r',this)>r</button>
-								<button class="agent-button" onclick=addText('a',this)>a</button>
-								<button class="agent-button" onclick=addText('b',this)>b</button>
-								<button class="agent-button" onclick=addText('c',this)>c</button>
-								<button class="agent-button" onclick=addText('d',this)>d</button>
-								<button class="agent-button" onclick=addText('e',this)>e</button>
-								<button class="monadic-button" onclick=addText('~',this)>¬</button>
-								<button class="diadic-button" onclick=addText("-&#62;",this)>→</button>
-								<button class="diadic-button" onclick=addText('&',this)>∧</button>
-								<button class="diadic-button" onclick=addText('V',this)>∨</button>
-								<button class="modal-button" onclick=addText('K',this)>K</button>
-								<button class="group-button" onclick=addText("C{",this)>C</button>
-								<button class="group-button" onclick=addText('D{',this)>D</button>
-								<button onclick=addText('{')>{</button>
-								<button onclick=addText('}')>}</button>
-								<button onclick=addText('(')>(</button>
-								<button onclick=addText(')')>)</button>
-								<button onclick=addText('delete')>X</button>
-							</div>
 							<div class="eval-input">
 								Enter a formula:
 								<input type="text" id="formulaInput" placeholder="e.g., (p ->
@@ -238,9 +207,9 @@
 					</div>
 					<div class="graph">
 					</div>
-					<div class="current-formula inactive">
+					<div class="current-formula inactive" id="formula-container">
 					</div>
-					<div class="current-subformula inactive dropdown">
+					<div class="current-subformula inactive dropdown" id="subformula-container">
 						<button class="dropbtn"> Dropdown </button>
 					</div>
 				</div>

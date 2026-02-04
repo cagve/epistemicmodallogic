@@ -2,6 +2,10 @@ body {
 	font-family: 'Open Sans', sans-serif;
 }
 
+#formula-container {
+	cursor: pointer;
+}
+
 #page-container {
 	width: 962px;
 	position: relative;

@@ -6,10 +6,6 @@
  * Copyright (c) 2013 Ross Kirsling
  * Released under the MIT License.
  */
-
-// const { index } = require("d3");
-
-// app mode constants
 var MODE = {
 	EDIT: 0,
 	EVAL: 1,
@@ -187,8 +183,8 @@ var varCountButtons = d3.selectAll('#edit-pane .var-count button'),
     selectedNodeLabel = d3.select('#edit-pane .selected-node-id'),
     evalInput = d3.select('#eval-pane .eval-input'),
     evalOutput = d3.select('#eval-pane .eval-output'),
-    currentFormula = d3.select('#app-body .current-formula');
-    currentSubFormula = d3.select('#app-body .current-subformula');
+    currentFormula = d3.select('#app-body .current-formula'),
+    currentSubformula = d3.select('#app-body .current-subformula'),
     btnSubformulae = d3.select('#btn-formulae');
 
 function announceFormula() {
@@ -347,30 +343,38 @@ function evaluateFormula() {
 			.classed('false', !truthVal);
 	});
 
+	currentFormula
+		.append("div")
+		// .attr("class", "dropdown-content")
+
 	// display evaluated formula
 	currentFormula
 		.html('<strong>Current formula:</strong><br>$' + wff.latex() + '$')
-		.classed('inactive', false);
+		.classed('inactive', false)
+		.on('click', function(event) {
+			console.log('hola')
+		});
 	
-	currentSubFormula.selectAll("*").remove();
+	currentSubformula.selectAll("*").remove();
 
-	//display subformulas
-	currentSubFormula
+	currentSubformula
 		.classed('inactive', false);
 
-	currentSubFormula
+	currentSubformula
 		.append("button")
 		.attr("class", "btn btn-primary")
 		.attr("id", "btn-subformulae")
 		.html("Subformulas")
 
-	currentSubFormula
+	// currentSubformula
+
+	currentSubformula
 		.append("div")
 		.attr("class", "dropdown-content")
 
-    let dropdownmenu = d3.select('.dropdown-content');
+	let dropdownmenu = d3.select('.dropdown-content');
 	subFormulas.forEach((subf, index) =>{
-			dropdownmenu.append("a")
+		dropdownmenu.append("a")
 			.attr("id", `subFormulaRadio_${index}`)
 			.html("$"+subf.latex()+"$")
 			.on("click", ()=> {
@@ -379,9 +383,10 @@ function evaluateFormula() {
 
 	})
 
-	// display truth evaluation
+	// display true evaluation
 	var latexTrue  =  trueStates.length ? '$w_{' +  trueStates.join('},$ $w_{') + '}$' : '$\\varnothing$',
-		latexFalse = falseStates.length ? '$w_{' + falseStates.join('},$ $w_{') + '}$' : '$\\varnothing$';
+			latexFalse = falseStates.length ? '$w_{' + falseStates.join('},$ $w_{') + '}$' : '$\\varnothing$';
+
 	evalOutput
 		.html('<div class="alert alert-success"><strong>True:</strong><div><div>' + latexTrue + '</div></div></div>' +
 			'<div class="alert alert-danger"><strong>False:</strong><div><div>' + latexFalse + '</div></div></div>')
@@ -389,7 +394,7 @@ function evaluateFormula() {
 
 	// re-render LaTeX
 	MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentFormula.node()]);
-	MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentSubFormula.node()]);
+	MathJax.Hub.Queue(['Typeset', MathJax.Hub, currentSubformula.node()]);
 	MathJax.Hub.Queue(['Typeset', MathJax.Hub, evalOutput.node()]);
 }
 
@@ -620,7 +625,18 @@ function getSingleCurvedSVGPath([x1, y1], [x2, y2], curviness) {
       ',' + x2 + ' ' + y2;
 }
 
-function printGraph(relations){
+function printGraphAtoms(){
+	circle.selectAll('text.atoms') 
+    .text(function(d) {
+        return propvars
+            .filter(function(_, i) { return d.vals[i]; }) 
+            .join(', '); 
+    })
+    .attr('y', 5);
+}
+
+
+function printGraphRelations(relations){
 	//remove groups links
 	links = links.filter(d => d.agent !== ('g') && d.agent !== ('h'));
 	relations.forEach(rel => {
@@ -657,7 +673,7 @@ function printGraph(relations){
 
 function resetGraph(){
 	let rel = model.getAllRelationsOfList(epistemicAgents)
-	printGraph(rel);
+	printGraphRelations(rel);
 }
 
 function subformulaeGraph(wff){
@@ -683,7 +699,7 @@ function subformulaeGraph(wff){
 		// For showing other arrows.
 		//links = links.filter(d => !agents.includes(d.agent)); 
 		links = []
-		printGraph(commonRelations)
+		printGraphRelations(commonRelations)
 	}else if (json.dist_start && json.dist_start.group_end && json.dist_start.group_end[0].prop) {
 		links = []
 		const agents = json.dist_start.group_end[0].prop.split('');
@@ -692,11 +708,11 @@ function subformulaeGraph(wff){
 			return { ...rel, agent: 'h' };
 		});
 		distRelations=removeDuplicates(distRelations);
-		printGraph(distRelations)
+		printGraphRelations(distRelations)
 	
 	} else {
 		const relations = model.getAllRelationsOfList(epistemicAgents);
-		printGraph(relations)
+		printGraphRelations(relations)
 	}
 	MathJax.Hub.Queue(['Typeset', MathJax.Hub, dropbtn]);
 }
@@ -1183,9 +1199,10 @@ function setAppMode(newMode) {
       .classed('true', false)
       .classed('false', false);
 
-    currentFormula.classed('inactive', true);
-    currentSubFormula.classed('inactive', true);
-	currentSubFormula.selectAll("*").remove();
+		currentFormula.classed('inactive', true);
+		currentSubformula.classed('inactive', true);
+		currentSubformula.selectAll("*").remove();
+
   } else if(newMode === MODE.EVAL|| newMode === MODE.TEXT ) {
     // disable listeners (except for I-bar prevention)
     svg.classed('edit', false)
