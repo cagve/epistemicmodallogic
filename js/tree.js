@@ -695,6 +695,18 @@ function toD3(node){
 	return d3Node;
 }
 
+function displayLogs(logger) {
+    const container = document.getElementById("log-container");
+    container.innerHTML = ""; // limpiar logs anteriores
+    logger.getLogs().forEach(log => {
+        const div = document.createElement("div");
+        div.className = `log-line ${log.type}`;
+        div.textContent = log.message;  // SOLO el mensaje, sin fecha
+        container.appendChild(div);
+    });
+    container.scrollTop = container.scrollHeight; // auto-scroll al último log
+}
+
 function computeRadius(d) {
 	return (d.children || d._children) ? radius + (radius * nbEndNodes(d) / 10) : radius;
 }
@@ -773,13 +785,27 @@ function runxx(){
 	d3.select("#graph-container").selectAll("*").remove();
 
 	// Set up SVG with dynamic width and height based on the container size
+	// 
+	container = document.getElementById('graph-container');
+	let width = container.clientWidth;
+	let height = container.clientHeight;
+
 	svg = d3.select("#graph-container")
-  .append("svg")
-  .attr("class", "tree-graph")
-  .attr("width", width)
-  .attr("height", height)
-  .append("g")
-  .attr("transform", `translate(0, ${maxLabel})`);
+		.append("svg")
+		.attr("class", "tree-graph")
+		.attr("width", "100%")
+		.attr("height", height)
+		.attr("viewBox", `0 0 ${width} ${height}`) // importante para escalar
+		.append("g")
+		.attr("transform", `translate(0, ${maxLabel})`);
+
+	// svg = d3.select("#graph-container")
+ //  .append("svg")
+ //  .attr("class", "tree-graph")
+ //  .attr("width", width)
+ //  .attr("height", height)
+ //  .append("g")
+ //  .attr("transform", `translate(0, ${maxLabel})`);
 
 	// Set up tree layout
 	tree = d3.tree().size([width, height - maxLabel * 2]);
@@ -794,17 +820,17 @@ function runxx(){
 	root.x0 = width / 2;
 	root.y0 = 0;
 
-	// displayLogsInHTML(logger);
+	displayLogs(logger);
 	update(root);
 }
 
 function update(source) {
-	// displayLogsInHTML(logger);
+	displayLogs(logger);
 
 	// Get the container element again in case it was resized
 	container = document.getElementById('graph-container');
-	width = container.clientWidth - 40; // Adjust for padding/margin
-	height = container.clientHeight - 100; // Adjust for padding/margin
+	width = container.clientWidth; // Adjust for padding/margin
+	height = container.clientHeight; // Adjust for padding/margin
 
 	// Set the size of the tree layout based on the container size
 	const treeData = tree(root);

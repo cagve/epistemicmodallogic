@@ -483,3 +483,42 @@ svg.tree-graph g.node:hover text {
   font-weight: 600;
 }
 
+
+
+/* LOGGER  */
+/* Contenedor del logger dentro del tree-input */
+#log-container {
+    width: 100%;
+    max-height: 120px;       /* altura limitada para que no crezca demasiado */
+    overflow-y: auto;
+    background-color: #f8f9fa; /* fondo suave, combina con Bootstrap */
+    font-family: monospace;
+    font-size: 0.75rem;       /* texto pequeño */
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6; /* borde gris suave */
+}
+
+/* Cada línea de log */
+#log-container .log-line {
+    margin: 1px 0;
+    line-height: 1.2;
+}
+
+/* Colores según tipo de log */
+#log-container .log-line.info {
+    color: #495057;   /* gris oscuro */
+}
+
+#log-container .log-line.success {
+    color: #198754;   /* verde */
+}
+
+#log-container .log-line.warning {
+    color: #fd7e14;   /* naranja */
+}
+
+#log-container .log-line.error {
+    color: #dc3545;   /* rojo */
+}
+
