@@ -6,11 +6,7 @@
  * Copyright (c) 2013 Ross Kirsling
  * Released under the MIT License.
  */
-var MODE = {
-	EDIT: 0,
-	EVAL: 1,
-	TEXT: 2
-    },
+var MODE = { EDIT: 0, EVAL: 1, TREE: 2 },
     appMode = MODE.EDIT;
 
 // set up initial MPL model (loads saved model if available, default otherwise)
@@ -1184,6 +1180,7 @@ function setAppMode(newMode) {
   // mode-specific settings
   if(newMode === MODE.EDIT ) {
 	  resetGraph();
+		d3.select('#info-box').style('display', 'block');
     // enable listeners
     svg.classed('edit', true)
       .on('mousedown', mousedown)
@@ -1203,8 +1200,9 @@ function setAppMode(newMode) {
 		currentSubformula.classed('inactive', true);
 		currentSubformula.selectAll("*").remove();
 
-  } else if(newMode === MODE.EVAL|| newMode === MODE.TEXT ) {
+  } else if(newMode === MODE.EVAL|| newMode === MODE.TREE ) {
     // disable listeners (except for I-bar prevention)
+		d3.select('#info-box').style('display', 'block');
     svg.classed('edit', false)
       .on('mousedown', function() { d3.event.preventDefault(); })
       .on('mousemove', null)
@@ -1234,6 +1232,12 @@ function setAppMode(newMode) {
     // reset eval state
     circle.classed('waiting', true);
     evalOutput.classed('inactive', true);
+		if (newMode === MODE.TREE){
+			d3.select('#app-body .graph').style('display', 'none');
+			d3.select('#info-box').style('display', 'none');
+			currentFormula.classed('inactive', true);
+			currentSubformula.classed('inactive', true);
+		}
   } else return;
 
   // switch button and panel states and set new mode

@@ -27,6 +27,9 @@
 					<button class="btn btn-primary" onclick="setAppMode(MODE.EVAL)"> <i class="icon-eye-open icon-white"> </i>
 						Evaluate Formula
 					</button>
+					<button class="btn btn-primary" onclick="setAppMode(MODE.TREE)"> <i class="icon-eye-open icon-white"> </i>
+						Tableau
+					</button>
 				</div>
 				<div id="app-body">
 					<div class="panel tab-content">
@@ -181,11 +184,26 @@
 								</ul>
 							</div>
 						</div>
-						<div id="text-pane" class="tab-pane">
-							<button onclick="updateModel()"> Update Model </button>
+						<div id="tree-pane" class="tab-pane">
+							<div class="tree-input d-inline-block p-2 border rounded bg-white shadow-sm">
+								<div class="input-group input-group-sm">
+									<span class="input-group-text bg-transparent border-0 fw-bold text-muted" style="font-size: 0.8rem;">
+										Formula:
+									</span>
+									<input type="text" 
+												 id="treeFormulaInput" 
+												 class="form-control border-0 bg-light" 
+												 placeholder="(p -> K{a}p)"
+												 style="width: 180px;">
+												 <button class="btn btn-primary btn-sm rounded-1 ms-1" 
+																 onclick="runTableau()">
+													 Tree
+												 </button>
+								</div>
+							</div>
 						</div>
 					</div>
-					<div style="position: absolute; bottom: 10px; left: 310px; z-index: 10;">
+					<div id="info-box" style="position: absolute; bottom: 10px; left: 310px; z-index: 10;">
 						<i style="color: gray;" id="checks-title">
 							loading...
 						</i>
@@ -675,5 +693,7 @@
 	<script src="js/MPL.js">
 	</script>
 	<script src="js/app.js">
+	</script>
+	<script src="js/tree.js">
 	</script>
 </html>
