@@ -789,6 +789,11 @@ function runxx(){
 	columnAttribute = [];
 	i = 0;
 
+	const btnFullscreen = document.getElementById('btn-fullscreen');
+	if (btnFullscreen) {
+		btnFullscreen.style.display = "inline-block"; 
+	}
+
 
 	
 	svgBase = d3.select("#tree-container")
@@ -911,6 +916,9 @@ function update(source) {
 
 }
 
+
+
+
 export {
   Node,
   Tableau,
@@ -928,4 +936,5 @@ window.Label = Label;
 window.Logger = Logger;
 window.toD3 = toD3;
 window.runxx = runxx;
+
 

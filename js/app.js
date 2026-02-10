@@ -1293,3 +1293,17 @@ function setActive(pane){
 			.classed("inactive", false);
 	}
 }
+
+
+function toggleFullScreen() {
+    const elem = document.getElementById("tree-container")
+
+    if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => {
+            alert(`Error intentando entrar en pantalla completa: ${err.message}`);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
+

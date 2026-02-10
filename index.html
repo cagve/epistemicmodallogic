@@ -9,6 +9,7 @@
 		<link rel="stylesheet" href="css/app.css">
 		<link rel="stylesheet" href="css/tree.css">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">'
 		<!-- <script src="https://cdn.jsdelivr.net/npm/d3@7"></script> -->
 		<script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
 	</head>
@@ -241,6 +242,11 @@
 					<div class="graph" id="graph-container">
 					</div>
 					<div class="graph inactive" id="tree-container">
+						<button id="btn-fullscreen" class="btn btn-outline-secondary btn-sm" 
+																				style="display: none; position: absolute; top: 10px; right: 10px; z-index: 10;" 
+																				onclick="toggleFullScreen()">
+							<i id="fullscreen-icon" class="fas fa-expand"></i>
+						</button>
 					</div>
 					<div class="current-formula inactive" id="formula-container">
 					</div>
@@ -248,16 +254,6 @@
 						<button class="dropbtn"> Dropdown </button>
 					</div>
 				</div>
-			</section>
-			<section class="text-section">
-				<h2>
-					New things
-				</h2>
-				<ul class="unstyled">
-					<li class="mb-1">
-						Insert model using JSON
-					</li>
-				</ul>
 			</section>
 			<section class="text-section">
 				<h2>

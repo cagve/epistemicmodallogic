@@ -85,3 +85,17 @@ svg {
 	margin-right:10px;
 	width: 180px;
 }
+
+
+#tree-container:fullscreen #btn-fullscreen {
+    display: block !important;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    opacity: 0.7;
+}
+
+#tree-container:fullscreen #btn-fullscreen:hover {
+    opacity: 1;
+}
