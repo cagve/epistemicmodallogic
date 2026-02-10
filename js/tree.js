@@ -36,15 +36,15 @@ class Node {
 	}
 
 
-	//formula = MLP formula
 	addSingleChild(id, formula, label = this.label){
+		let node = null
 		if (this.left === null){
-			let node = new Node(id, formula, label, this)
+			node = new Node(id, formula, label, this)
 			this.left = node
-			return node;
 		}else{
 			this.left.addSingleChild(id, formula, label)
 		}
+		return node;
 	}
 
 	addTwoChildren(id1, formula1, id2, formula2, label=this.label){
@@ -111,11 +111,9 @@ class Node {
 class Tableau {
 	constructor(data) {
 		if (typeof data === 'string') {
-			// Si formula es un string, usamos MPL.Wff
 			var formula = new MPL.Wff(data)
 			this.root = new Node(1, formula, new Label('1'));
 		} else {
-			// Si formula no es un string, directamente la pasamos o la procesamos como corresponda
 			this.root = this.fromD3(data)
 		}
 			this.alpha_group = []
@@ -203,32 +201,25 @@ class Tableau {
 			const formula2 = new MPL.Wff(MPL._jsonToASCII(formula.disj[1]))
 			this.addDoubleExtension(formula1,formula2, node);
 		}else if(formula.kno_start){  
-			const formula1 = new MPL.Wff(MPL._jsonToASCII(formula))
 			var term  = new MPL.Wff(MPL._jsonToASCII(formula.kno_start.group_end[1]));
-			let n = this.addSingleExtension(term, node)
 			const leafs = this.getLeafs(node);
+			const isTActive = document.getElementById('ruleTToggle').checked;
 			leafs.forEach(leaf => {
 				const branch = this.getBranchFromLeaf(leaf)
-				const exts = branch.getSimpleExtensions(node.label)
+				const exts = branch.getSimpleExtensions(node.label, isTActive) // If t Active simple extension add current extension
 				if (exts.length === 0){
 					return 
 				}
-				exts.forEach(newLabel =>{
-					// RULE K
+				exts.forEach(label =>{
 					var newId = parseInt(leaf.id + '1');
-					let newNode = leaf.addSingleChild(newId,term,newLabel);
-					// RULE 4
-					var newnewId = parseInt(newNode.id + '1');
-					let newnewNode = newNode.addSingleChild(newnewId,formula1, newLabel)
+					let newNode = leaf.addSingleChild(newId,term,label);
 					this.addAvailableNode(newNode)
-					this.addAvailableNode(newnewNode)
 				})
 			});
-			//REGLA T
 		} else if(formula.neg){
 			if (formula.neg.kno_start){
 				const agents = formula.neg.kno_start.group_end[0].prop.split('');
-		  		var term  = formula.neg.kno_start.group_end[1];
+				var term  = formula.neg.kno_start.group_end[1];
 				const f1 = MPL.negateWff(term);
 				const leafs = this.getLeafs(node);
 				leafs.forEach(leaf => {
@@ -242,8 +233,8 @@ class Tableau {
 						newLabel = node.label.addExtension(agents,count.toString())
 						flag = branch.isSuplerflous(newLabel);
 					}
-					// RULE K
-					var newId = parseInt(leaf.id + '1');
+					// RULE K 
+					let newId = parseInt(leaf.id + '1');
 					let newNode = leaf.addSingleChild(newId,f1, newLabel)
 					this.addAvailableNode(newNode);
 					this.updateNuGroup();
@@ -360,6 +351,7 @@ class Tableau {
 	}
 
 	addAvailableNode(node){
+		console.log(node)
 		const type = node.typeOfRule()
 		switch (type){
 			case "alpha":
@@ -497,7 +489,6 @@ class Tableau {
 				}
 			}
 			logger.addLog(`Tableau ended`);
-			console.log(this.isEnded());
 			return logger;
 		}
 
@@ -658,9 +649,13 @@ class Branch {
 		})
 	}
 
-	getSimpleExtensions(label){
+	getSimpleExtensions(label, isTActive){
 		const labelSet = this.getAllLabels();
 		const filtered = labelSet.filter((x) => x.isSimpleExtension(label))
+		// Regla T
+		if (isTActive) {
+			filtered.push(label)
+		}
 		return filtered;
 	}
 
@@ -761,6 +756,7 @@ function rclick(event, d) {
 }
 
 
+const isTActive = document.getElementById('ruleTToggle').checked;
 let maxLabel = 150;
 let duration = 500;
 let radius = 5;
@@ -771,8 +767,10 @@ let columnAttribute = [];
 let currentTableau = null;
 const logger = new Logger();
 let container = document.getElementById('graph-container');
+let svgBase, mainGroup, svg, linkGroup;
 
 function runxx(){
+	logger.clearLogs();
 	const formula = document.getElementById('treeFormulaInput').value;
 	const f = new MPL.Wff(formula);
 	const tableau = new Tableau(formula);
@@ -784,28 +782,25 @@ function runxx(){
 
 	d3.select("#graph-container").selectAll("*").remove();
 
-	// Set up SVG with dynamic width and height based on the container size
-	// 
 	container = document.getElementById('graph-container');
 	let width = container.clientWidth;
 	let height = container.clientHeight;
-
-	svg = d3.select("#graph-container")
+	
+	svgBase = d3.select("#graph-container")
 		.append("svg")
-		.attr("class", "tree-graph")
 		.attr("width", "100%")
-		.attr("height", height)
-		.attr("viewBox", `0 0 ${width} ${height}`) // importante para escalar
-		.append("g")
-		.attr("transform", `translate(0, ${maxLabel})`);
+		.attr("height", "100%")
+		.call(d3.zoom().on("zoom", (event) => {
+			mainGroup.attr("transform", event.transform); // Mueve TODO el contenido
+		}));
 
-	// svg = d3.select("#graph-container")
- //  .append("svg")
- //  .attr("class", "tree-graph")
- //  .attr("width", width)
- //  .attr("height", height)
- //  .append("g")
- //  .attr("transform", `translate(0, ${maxLabel})`);
+	mainGroup = svgBase.append("g");
+	linkGroup = mainGroup.append("g")
+    .attr("class", "links-layer")
+    .attr("transform", `translate(0, ${maxLabel})`);
+
+	svg = mainGroup.append("g")
+        .attr("transform", `translate(0, ${maxLabel})`);
 
 	// Set up tree layout
 	tree = d3.tree().size([width, height - maxLabel * 2]);
@@ -827,38 +822,23 @@ function runxx(){
 function update(source) {
 	displayLogs(logger);
 
-	// Get the container element again in case it was resized
-	container = document.getElementById('graph-container');
-	width = container.clientWidth; // Adjust for padding/margin
-	height = container.clientHeight; // Adjust for padding/margin
-
-	// Set the size of the tree layout based on the container size
 	const treeData = tree(root);
 	const nodes = treeData.descendants();
 	const links = treeData.links();
 
-	let visibleDepth = getVisibleDepth(root);
-	height = (visibleDepth + 2) * maxLabel;  // Adjust height based on visible depth
-	tree.size([width, height - maxLabel * 2]);
-
-	// Update SVG height dynamically based on the new tree size
-	d3.select("svg").transition().duration(duration).attr("height", height);
-
-	nodes.forEach(d => d.y = d.depth * maxLabel);
+	nodes.forEach(d => {
+		d.y = d.depth * maxLabel; 
+	});
 
 	const node = svg.selectAll("g.node")
 		.data(nodes, d => d.id || (d.id = ++i));
 
 	const nodeEnter = node.enter().append("g")
-		.attr("class", "node")
-		.attr("transform", d => `translate(${source.x0},${source.y0})`)
-		.on("click", click)
-		.on("contextmenu", rclick)
-		.on("dblclick", dblClick);
+    .attr("class", d => "node-tableau " + (currentTableau.isAvailable(d.id) ? "clickable" : "non-clickable"))
+    .attr("transform", d => `translate(${source.x0},${source.y0})`);
 
 	nodeEnter.append("circle")
-		.attr("r", 0)
-		.attr("class", d => currentTableau.isAvailable(d.id) ? "clickable" : "non-cickable");
+		.attr("r", 0); 
 
 	nodeEnter.append("text")
 		.attr("x", d => {
@@ -875,8 +855,17 @@ function update(source) {
 		.attr("transform", d => `translate(${d.x},${d.y})`);
 
 	nodeUpdate.select("circle")
-		.attr("r", d => computeRadius(d.data))
-		.attr("class", d => currentTableau.isAvailable(d.id) ? "clickable" : "non-cickable");
+    .attr("r", d => computeRadius(d.data))
+    // .attr("class", d => currentTableau.isAvailable(d.id) ? "node-circle-active" : "node-circle-disabled");
+		.attr("class", d => {
+			if (!d.children && !d._children) {
+				const leafs = currentTableau.getClosedLeafs().map((leaf) => leaf.id)
+				const isClosed = leafs.includes(Number(d.id))
+				if (isClosed)  return "close-leaf";
+				if (!isClosed) return "open-leaf"
+			}
+			return currentTableau.isAvailable(d.id) ? "node-circle-active" : "node-circle-disabled";
+		});
 
 	nodeUpdate.select("text").style("fill-opacity", 1);
 
@@ -888,20 +877,22 @@ function update(source) {
 	nodeExit.select("circle").attr("r", 0);
 	nodeExit.select("text").style("fill-opacity", 0);
 
-	const link = svg.selectAll("path.link")
+	const link = linkGroup.selectAll("path.link")
 		.data(links, d => d.target.id);
 
-	link.enter().insert("path", "g")
+	const linkEnter = link.enter().insert("path", "g")
 		.attr("class", "link")
 		.attr("d", d => {
 			const o = { x: source.x0, y: source.y0 };
 			return diagonal({ source: o, target: o });
-		})
-		.merge(link)
-		.transition().duration(duration)
+		});
+
+	link.merge(linkEnter).transition()
+		.duration(duration)
 		.attr("d", diagonal);
 
-	link.exit().transition().duration(duration)
+	link.exit().transition()
+		.duration(duration)
 		.attr("d", d => {
 			const o = { x: source.x, y: source.y };
 			return diagonal({ source: o, target: o });
@@ -912,23 +903,7 @@ function update(source) {
 		d.x0 = d.x;
 		d.y0 = d.y;
 	});
-	
-    // Verificar si el tableau está cerrado
-	// [FiX] Mejorar
- //    const isClosed = currentTableau.isClosed();
-	// if (isClosed){
-	// 	setTimeout(() => {
-	// 		console.log(svg.selectAll("circle"));
-	// 		svg.selectAll("circle")
-	// 			.transition().duration(duration)
-	// 			.style("fill", 'red');
-	//
-	// 		svg.selectAll("path.link")
-	// 			.transition().duration(duration)
-	// 			.style("stroke", 'red');
-	//
-	// 	}, 600); 
-	// }
+
 }
 
 export {
