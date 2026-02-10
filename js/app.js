@@ -1177,9 +1177,9 @@ var modeButtons = d3.selectAll('#mode-select button'),
 
 
 function setAppMode(newMode) {
-  // mode-specific settings
   if(newMode === MODE.EDIT ) {
 	  resetGraph();
+		setAppMode('graph')
 		d3.select('#info-box').style('display', 'block');
     // enable listeners
     svg.classed('edit', true)
@@ -1200,8 +1200,8 @@ function setAppMode(newMode) {
 		currentSubformula.classed('inactive', true);
 		currentSubformula.selectAll("*").remove();
 
-  } else if(newMode === MODE.EVAL|| newMode === MODE.TREE ) {
-    // disable listeners (except for I-bar prevention)
+  } else if(newMode === MODE.EVAL || newMode === MODE.TREE) {
+		if (newMode === MODE.EVAL) { setActive('graph')}
 		d3.select('#info-box').style('display', 'block');
     svg.classed('edit', false)
       .on('mousedown', function() { d3.event.preventDefault(); })
@@ -1211,15 +1211,12 @@ function setAppMode(newMode) {
       .on('keydown', null)
       .on('keyup', null);
 
-    // in case ctrl still held
     circle
       .on('mousedown.drag', null)
       .on('touchstart.drag', null);
     svg.classed('ctrl', false);
     lastKeyDown = -1;
 
-    // stop showing drag line if the app switches to another mode e.g. from the 'Edit Modal' tab
-    // to the 'Evaluate Formula' tab.
     drag_line
       .classed('hidden', true)
       .style('marker-end', '');
@@ -1233,13 +1230,10 @@ function setAppMode(newMode) {
     circle.classed('waiting', true);
     evalOutput.classed('inactive', true);
 		if (newMode === MODE.TREE){
-			d3.select("#graph-container").select("svg").remove();
-			// d3.select('#app-body .graph').style('display', 'none');
+			setActive('tree')
 			d3.select('#info-box').style('display', 'none');
-			// currentFormula.classed('inactive', true);
-			// currentSubformula.classed('inactive', true);
 		}
-  } else return;
+	} else return;
 
   // switch button and panel states and set new mode
   modeButtons.each(function(d,i) {
@@ -1276,4 +1270,26 @@ if (formulaParam && formulaParam[1].length > 0) {
   evalInput.select('input').node().value = formulaValue;
   setAppMode(MODE.EVAL);
   evaluateFormula();
+}
+
+function setActive(pane){
+	if (pane === "tree") {
+		// Activa el árbol, desactiva el grafo
+		d3.select("#tree-container")
+			.classed("active", true)
+			.classed("inactive", false);
+
+		d3.select("#graph-container")
+			.classed("active", false)
+			.classed("inactive", true);
+	} else if (pane === "graph") {
+		// Activa el grafo, desactiva el árbol
+		d3.select("#tree-container")
+			.classed("active", false)
+			.classed("inactive", true);
+
+		d3.select("#graph-container")
+			.classed("active", true)
+			.classed("inactive", false);
+	}
 }

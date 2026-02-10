@@ -226,16 +226,19 @@ class Tableau {
 					const branch = this.getBranchFromLeaf(leaf);
 					let labels = branch.getAllLabels().map(x=>x.simplify())
 					var count = 1
-					var newLabel = node.label.addExtension(agents,count.toString())
-					var flag = (labels.includes(newLabel.simplify()) || branch.isSuplerflous(newLabel))
+					var newLabel = node.label.addExtension(agents,count.toString());
+					var flag = labels.includes(newLabel.simplify()) ;
 					while (flag){
 						count += 1
 						newLabel = node.label.addExtension(agents,count.toString())
-						flag = branch.isSuplerflous(newLabel);
+
 					}
-					// RULE K 
 					let newId = parseInt(leaf.id + '1');
 					let newNode = leaf.addSingleChild(newId,f1, newLabel)
+					if (branch.isSuplerflous(newLabel)){
+						console.log("No node needed bc is superflous")
+						return
+					}
 					this.addAvailableNode(newNode);
 					this.updateNuGroup();
 				})
@@ -351,7 +354,6 @@ class Tableau {
 	}
 
 	addAvailableNode(node){
-		console.log(node)
 		const type = node.typeOfRule()
 		switch (type){
 			case "alpha":
@@ -643,7 +645,7 @@ class Branch {
 	isSuplerflous(label){
 		const labelSet = this.getAllLabels()
 		var currentBase = label.getBase(this)
-		labelSet.some(labelPrima =>{
+		return labelSet.some(labelPrima =>{
 			let basePrima = labelPrima.getBase(this);
 			return currentBase.every(element => basePrima.includes(element))
 		})
@@ -652,7 +654,6 @@ class Branch {
 	getSimpleExtensions(label, isTActive){
 		const labelSet = this.getAllLabels();
 		const filtered = labelSet.filter((x) => x.isSimpleExtension(label))
-		// Regla T
 		if (isTActive) {
 			filtered.push(label)
 		}
@@ -691,15 +692,19 @@ function toD3(node){
 }
 
 function displayLogs(logger) {
-    const container = document.getElementById("log-container");
-    container.innerHTML = ""; // limpiar logs anteriores
-    logger.getLogs().forEach(log => {
-        const div = document.createElement("div");
-        div.className = `log-line ${log.type}`;
-        div.textContent = log.message;  // SOLO el mensaje, sin fecha
-        container.appendChild(div);
-    });
-    container.scrollTop = container.scrollHeight; // auto-scroll al último log
+	const container = d3.select("#log-container");
+	container.classed("active", true)
+		.classed("inactive", false);
+	container.html(""); 
+
+	container.selectAll(".log-line")
+		.data(logger.getLogs()) 
+		.enter()              
+		.append("div")       
+		.attr("class", d => `log-line ${d.type}`) 
+		.text(d => d.message);  
+
+	container.node().scrollTop = container.node().scrollHeight;
 }
 
 function computeRadius(d) {
@@ -766,27 +771,27 @@ let root;
 let columnAttribute = [];
 let currentTableau = null;
 const logger = new Logger();
-let container = document.getElementById('graph-container');
+let container = document.getElementById('tree-container');
 let svgBase, mainGroup, svg, linkGroup;
 
 function runxx(){
 	logger.clearLogs();
+	d3.select("#tree-container").select("svg").remove();
 	const formula = document.getElementById('treeFormulaInput').value;
 	const f = new MPL.Wff(formula);
 	const tableau = new Tableau(formula);
+	const isTActive = document.getElementById('ruleTToggle').checked;
+	const msg = isTActive ? "Running Tableau for T" : "Running Tableau for K";
+	logger.addLog(msg)
 	tableau.runTableau(logger);
 	const treeData = tableau.toD3();
 	currentTableau = tableau;
 	columnAttribute = [];
 	i = 0;
 
-	d3.select("#graph-container").selectAll("*").remove();
 
-	container = document.getElementById('graph-container');
-	let width = container.clientWidth;
-	let height = container.clientHeight;
 	
-	svgBase = d3.select("#graph-container")
+	svgBase = d3.select("#tree-container")
 		.append("svg")
 		.attr("width", "100%")
 		.attr("height", "100%")
